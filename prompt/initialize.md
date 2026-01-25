@@ -3,7 +3,7 @@
 **Read this file at the start of every new Claude Code session.**
 
 **Last Updated**: January 2025
-**Status**: Phase 0 Complete - Ready to Implement Phase 1
+**Status**: Phase 0 Complete - Test Specifications in Progress
 
 ---
 
@@ -34,6 +34,36 @@ High-level architectural plans exist for Phases 0-3:
 | `docs/implementation/phase3.md` | Intelligent Analysis | Complete |
 
 **Read these files for detailed component specifications.**
+
+---
+
+## Test Specifications
+
+Test specifications define acceptance criteria for each phase:
+
+| File | Phase | Status |
+|------|-------|--------|
+| `docs/testing/phase1-test-specification.md` | MVP Core | Complete |
+| `docs/testing/phase2-test-specification.md` | Conversational AI | Pending |
+| `docs/testing/phase3-test-specification.md` | Intelligent Analysis | Pending |
+
+### Testing Approach
+
+- **Test resources**: YouTube video with auto-generated transcript as ground truth
+- **Transcription verification**: LLM agent compares WhisperX output vs YouTube transcript
+- **Fuzzy matching**: Semantic similarity (≥85%), not exact word matching
+- **Screenshot verification**: Playwright MCP captures UI states for visual verification
+
+### Test Resource Preparation
+
+```bash
+# Download test video and transcript from YouTube
+./scripts/prepare-test-data.sh "<YOUTUBE_URL>"
+```
+
+This creates:
+- `/data/test/videos/test_meeting_primary.mkv` - Test video
+- `/data/test/expected/test_meeting_primary_ground_truth.json` - Ground truth transcript
 
 ---
 
@@ -139,16 +169,16 @@ Claude reads image files directly and extracts visible text. No pytesseract.
 
 ## Implementation Phases
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 0 | Environment Setup & Scaffolding | **COMPLETE** |
-| 1 | MVP Core | **NEXT: Implement this phase** |
-| 2 | Conversational AI (Quick Mode) | Architecture complete |
-| 3 | Intelligent Analysis | Architecture complete |
-| 4 | Agentic Search (Deep Mode) | Not planned |
-| 5 | Knowledge Graph | Not planned |
-| 6 | Polish & Administration | Not planned |
-| 7 | Conversation Persistence | Not planned |
+| Phase | Name | Architecture | Tests | Implementation |
+|-------|------|--------------|-------|----------------|
+| 0 | Environment Setup & Scaffolding | Complete | N/A | **COMPLETE** |
+| 1 | MVP Core | Complete | **COMPLETE** | Pending |
+| 2 | Conversational AI (Quick Mode) | Complete | Pending | Pending |
+| 3 | Intelligent Analysis | Complete | Pending | Pending |
+| 4 | Agentic Search (Deep Mode) | Not planned | - | - |
+| 5 | Knowledge Graph | Not planned | - | - |
+| 6 | Polish & Administration | Not planned | - | - |
+| 7 | Conversation Persistence | Not planned | - | - |
 
 ---
 
@@ -166,9 +196,16 @@ Claude reads image files directly and extracts visible text. No pytesseract.
 │           └── 00125.jpg   # Frame at timestamp
 ├── transcripts/            # WhisperX JSON output (Claude reads these)
 │   └── {video_id}.json
-└── temp/                   # Temporary files for Claude I/O (auto-cleaned)
-    ├── context_{uuid}.json # Search context for Quick Mode
-    └── analysis_{id}.txt   # Claude's pipe-delimited output
+├── temp/                   # Temporary files for Claude I/O (auto-cleaned)
+│   ├── context_{uuid}.json # Search context for Quick Mode
+│   └── analysis_{id}.txt   # Claude's pipe-delimited output
+└── test/                   # Test resources (not committed to git)
+    ├── videos/
+    │   ├── test_meeting_primary.mkv  # YouTube-sourced test video
+    │   ├── test_silent.mkv           # Edge case: silent audio
+    │   └── test_corrupted.mkv        # Edge case: invalid file
+    └── expected/
+        └── test_meeting_primary_ground_truth.json  # YouTube transcript
 ```
 
 ---
@@ -222,6 +259,7 @@ for line in text.strip().split('\n'):
 | `docs/implementation/phase1.md` | Phase 1 architecture + components |
 | `docs/implementation/phase2.md` | Phase 2 architecture + Claude wrapper |
 | `docs/implementation/phase3.md` | Phase 3 architecture + content analysis |
+| `docs/testing/phase1-test-specification.md` | Phase 1 test criteria + E2E scenarios |
 | `docs/architecture/claude-integration.md` | Claude wrapper module specification |
 | `docs/architecture/data-model.md` | PostgreSQL + OpenSearch schemas |
 | `docs/requirements/implementation-phases.md` | Phase details |
@@ -233,11 +271,12 @@ for line in text.strip().split('\n'):
 
 1. Read this file: `docs/initialize.md`
 2. Check implementation plans: `docs/implementation/phase{0,1,2,3}.md`
-3. Check architecture docs as needed
+3. Check test specifications: `docs/testing/phase{1,2,3}-test-specification.md`
+4. Check architecture docs as needed
 
-**Current work**: Implement Phase 1 (MVP Core).
+**Current work**: Complete test specifications for Phases 1-3, then implement.
 
-Phase 0 is complete:
+### Phase 0 (Complete)
 - Docker Compose with all infrastructure services (postgres, opensearch, redis, backend, celery-worker, frontend)
 - Backend scaffolding (FastAPI, SQLAlchemy, Celery, Alembic)
 - Frontend scaffolding (Vite, React, Tailwind)
@@ -245,7 +284,15 @@ Phase 0 is complete:
 - Verification script: `./scripts/verify-environment.sh`
 - Start environment: `docker compose up -d`
 
-Phase 1 involves:
+### Phase 1 Test Specification (Complete)
+- Unit tests: ~51 backend, ~29 frontend
+- Integration tests: API + DB + Services
+- E2E tests: 6 Playwright scenarios
+- LLM verification: Transcript quality via Claude agent
+- Screenshot verification: 17 checkpoints
+- See `docs/testing/phase1-test-specification.md`
+
+### Phase 1 Implementation (Next)
 - Database models (Video, Segment, etc.)
 - Video upload and processing pipeline
 - WhisperX transcription with speaker diarization

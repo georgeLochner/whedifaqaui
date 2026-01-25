@@ -9,4 +9,18 @@ Before we begin any kind of implementation we need to create a high level archit
   are required and where they will be created in the project structure. We do not neccesraily have to define specific file names but rather the overall folder structure so that we basically which components are required and where they will live but we still leave some
   flexibility regarding the actual detail implementation for later. So we are looking for a structural layer definition and a high level specification of the components such are modules or services that are required. 
 
+--------------------------
+prior to starting phase 1 I want to introduce a "phase 0" which must cover the setup of the environment. This should include: 
+* running servers that just return health check status, without any functionality implemented, 
+* docker images for dependencies such as db installed and tested for availability
+* docker compose environemnt configured
+* all python/npm dependencies installed and virtual env prepared
 
+Can you think of any other preparation activities that should be included. We want to get the environment in a state that is ready for code implementation
+--------------------------------------
+Our goal is to implement phase 0 to 3. However the final and most critical step before implementation can start is that we need to analyse each phase individually and define the testing criteria that we will use to determine that the     
+  phase is succesfully implemented. Phase 0 is a bit different since it involves environment setup. Analyse @docs/implementation/phase0.md and determine whether the verification steps are adequate to confirm that the environment is         
+  ready, or suggest additional tests and verifications  
+  --------------------------------------
+Our goal is to implement phase 1 to 3. However the final and most critical step before implementation can start is that we need to analyse each phase individually and define the testing criteria that we will use to determine that the     
+  phase is succesfully implemented. Critically we need to define end to end test and create test resources such that we can test the system with known inputs and expected outputs. A key aspect of verificaiton in general is also that agents should use playwright mcp to capture screenshots. Playwright is not currently enabled in this project but it will be available when implementation commences. As such we need to plan how verification should be accomplished, including required screenshots. Let us analyse phase 1 including user stories and then define the required tests which should include a combination of functional test as well as end to end tests.
