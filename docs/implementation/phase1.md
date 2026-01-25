@@ -309,7 +309,7 @@ UPLOAD → VIDEO_PROCESSING → TRANSCRIPTION → CHUNKING → INDEXING → READ
 |-----------|-------|
 | `services/claude.py` (Claude wrapper) | Phase 2 |
 | Entity extraction & relationships | Phase 3 |
-| Speaker diarization | Phase 3 |
+| Speaker name mapping UI | Phase 3 |
 | Deep Mode REST API | Phase 4 |
 | Neo4j integration | Phase 5 |
 | Conversation persistence | Phase 7 |
