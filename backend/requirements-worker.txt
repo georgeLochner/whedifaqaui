@@ -1,0 +1,6 @@
+# ML/Transcription (worker only)
+whisperx @ git+https://github.com/m-bain/whisperX.git
+sentence-transformers==2.6.1
+
+# Note: torch is installed as a dependency of whisperx
+# FFmpeg is installed at OS level in Dockerfile.worker
