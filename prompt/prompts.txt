@@ -1,0 +1,12 @@
+This is a brainstorming session about a new project. We are not writing any code. We are simply going to define user requirements but you should ultrathink about this project. 
+The inspiration for this project was my experience during the handover of a complex technical project. The current team of developers needed to hand over the project to a new team. This involved a lot of technical meetings during which there where explanations and demonstrations of various parts of the system. The system was mostly undocumentated so all the knowledge was exchanged during these presentations. This resulted in many hours of video taped meetings. So the challenge after the original team had departed was to find the specific sections of videos where particular parts of the system or scenarios were discussed from among the many hours of recordings. The goal of the development which we will plan here is to create a system which will ingest videos, transcribe them and then index the content in a way that we can search for content using natural language queries. The system must then identify specific videos and timestamps where relevant information can be found as well as provide summary answers. 
+We must define all the user requirements and interaction mechanisms and generate a list of user stories that our project must satisfy. Only once these are defined will we look at technical approaches required to implement the project. Ask any questions that require clarification.
+
+
+
+
+Before we begin any kind of implementation we need to create a high level architectural plan. So put your architect hat on. For this endevour we will consider the project in its entirety as documented. We must now determine the high level structure and identify which components
+  are required and where they will be created in the project structure. We do not neccesraily have to define specific file names but rather the overall folder structure so that we basically which components are required and where they will live but we still leave some
+  flexibility regarding the actual detail implementation for later. So we are looking for a structural layer definition and a high level specification of the components such are modules or services that are required. 
+
+

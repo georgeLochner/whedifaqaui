@@ -1,0 +1,186 @@
+1) Any team member from developers to manager might use this system to find relevant knowledge. 
+What we should keep in mind is that over time we will add more information and we will continue to use this information source as the project evolves. So we will have to maintain date information because requirements and solution will change over time and some information may become outdated
+2) I dont think we should concern ourselves with concurrency, this will be small scale.
+3) Video is generally saved in mkv format and meetings can range from 10 minutes to 2 hours typically. Over time we will accumulate more videos.
+Initially there might be 20 hours of video but this will grow over time.
+4) Videos typically are single speaks showing whiteboards, web front ends, slides or just talking. Its a mixture of content
+5) There will typically be multiple participants. Usually audio quality is decent. Some speakers may have an accent as the team comprises people of european, african and indian decent. All discussion are in english
+6) The questions you listed are typically the kinds of questions to be catered for. There may be questions about specific entities involving the names of individual, projects, systems and so forth. There could be questions about dates such as for example when specific features were added to the system or when certain problems were encountered.
+7) Ideally yes. Taking this further we might even want to create a timeline of events related to a particular topic
+8) My preference would be an AI generated summary of content found with links to timestamps in the videos. So you should be able to navigate to the relevant timestamp in the video and watch from there
+9) I think the ability to add notes or context when adding a video to the system would be useful. 
+10) We will not currently worry about access restrictions. 
+
+1) For the POC we will store videos on the server where the application is running. I envisage a web front end with a sections for uploading files and a section for asking questions, displaying responses and watching video content. 
+2) This is an interesting idea, it woudl be useful to have an AI analyse the transcription, identify key points where important visual content may be visible and then taking screenshots to generate descriptions of images or using OCR to capture text context.
+3) It could be valuable to know who said what, so we should explore the possibilty of identifying the speakers
+4) Yes we should explore some kind entity extraction and matching strategy. Opensearch could be an avenue to consider for indexing and fuzzy matching
+5) It would be useful to retrieve the original transcription along with the video and to edit it
+6) this is an interesting idea. we could implement an interaction box where the user can add comments related to particular video time slots they are watching
+7) I think we should implement this through the use of AI analysis of the video content such that the AI can maintain a dynamic "map" of topics and interrelated concepts as new videos are added. In other words the AI analysis should attempt to "understand" the content of the video and map it into an evolving knowledge graph about the domain as a whole.
+8) Yes as discussed in 7, I think what is emerging from our discussion is that the real value added potential of this project is the intelligent analysis of the video content in order to categorize and map it appropraitely. This understanding could be achieved by a combination of an AI agent reading the transcript and also capturing screenshots at key points. 
+
+
+
+1) Yes I think we can implement an AI driven conversation. I envisage that when the user poses a question, this will be sent to an ai agent that has been given context about the mechanisms or api's exposed by the knowledge store such that it can intelligently search for and bring together relevant results
+2) Yes it would be useful to export a result. I am starting to think about the search interface as a web page with a conversation section where the user asks questions and the ai responds  as well as a results section which may consist of a scrollable list of results that the ai generates. When the user clicks on one of the elements in the list the content appears in a content pane. The result list could contain video links at specfic timestamps, or even a document. So if the user enter "what was discussed about aws cognito" then relevant video links would be added to the results list. If the user then asks "summarize the dicussion in the second video" then the ai produces the summary and adds a link to the document in the result list. When clicked the document displays in the content area with a download link.
+3) Lets start with one-by-one uploading
+4) you can propose an ordering. Ideally we want to get to something that is end to end testable as soon as possible
+
+
+
+1) we can add conversation persistence as phase 6
+2) these fields are fine
+3) The project name is whedifaqaui. It is named after a little know bird that lives in the african grass plains. This tiny flighless bird has a signature call that sounds like "whedifaqaui" which it utters as it jumps above the grass when it needs to locate its nest.
+4) No we can proceed to capture the user stories and phased goals in docs/requirements. Also add frontend layout mockups
+
+
+
+  1. OpenSearch vs PostgreSQL-only: OpenSearch adds infrastructure complexity but gives better search capabilities. For ~20 hours of video (maybe 200k transcript segments), PostgreSQL + pgvector might be sufficient initially. Preference?
+  2. LLM for entity extraction:
+    - Cloud API (OpenAI GPT-4, Claude) - better quality, API costs
+    - Local (Llama 3, Mistral) - free, requires GPU, slightly lower quality
+    - Hybrid (local for bulk, cloud for disambiguation)
+  3. Graph database: Given your knowledge graph visualization requirements (Phase 4), should we:
+    - Model relationships in PostgreSQL (simpler, less natural for graphs)
+    - Add Neo4j later when we reach Phase 4
+    - Include Neo4j from the start
+  4. Embedding model: Cloud (OpenAI) vs local (BGE, Nomic)? Local is free but requires more compute.
+
+  1) I dont think the infrastructure complexity is too onerous since we can run docker containers
+  2) Here we will be a bit pragmatic. We will run queries through claude code cli in non-interactive mode (i.e. `claude -p "the query"`). We use the query to point the agent to the locations of transcription files that it should read. To run an interaction we can initialize the convesation with a session id and the just include the session id in subsequent invocations. The developers using the system all have claude code subscriptions so it will be more convenient.
+  3) explain more about neo4j. Is it a python library?
+  4) explain more about the embeddin model. How does it fit in the system
+
+
+  3) alright we can add neo4j in phase 4. is neo4j available in a container
+
+
+Regarding Claude Code CLI as Query Agent - Should we consider giving more responsibility to the agent? In other words we expose the search capabilities of the system through a cli or mcp to the agent and explain their use. Then we allow the agent to try to locate the information at its discretion. It may then iterate intelligently and build up context around the question. Almost like when I ask you to do a web search.
+
+
+Regarding the chunking phase for vector embeddings, how are the chunks created? Do we blindly grab pieces of transcripts or generate chunks using an llm. I am thinking it might make sense for the llm to first read and understand the whole transcript and then generate relevant chunks for Embedding but you must consider and advise
+  To advise on the model, consider the indicated hardware
+
+
+Tech stack - libraries + versions
+High level architecture
+Testing strategy and testing data generation.
+
+
+
+  Documentation Inconsistencies and Contradictions
+
+  I found 13 inconsistencies across the documentation:
+
+  1. Duplicate Section Numbering (docs/architecture/README.md)
+
+  - Lines 94 and 104 both have "### 3." headers:
+    - ### 3. Claude Code CLI as Query Agent
+    - ### 3. Embedding Strategy
+
+  2. Neo4j Phase Discrepancy (Major)
+
+  Different documents assign Neo4j to different phases:
+  | File                        | Neo4j Phase |
+  |-----------------------------|-------------|
+  | architecture/README.md:10   | Phase 4     |
+  | decisions.md:131-152        | Phase 5     |
+  | implementation-phases.md:15 | Phase 5     |
+  | data-model.md:451           | Phase 4     |
+  | deployment.md:26,200-202    | Phase 4     |
+  | technology-stack.md:29      | Phase 5     |
+
+  3. Missing File Reference (docs/initialize.md:70)
+
+  References docs/versions.md which does not exist:
+  "See docs/versions.md for rationale."
+
+  4. Claude CLI Flag Inconsistency
+
+  | File                  | CLI Flag Used            |
+  |-----------------------|--------------------------|
+  | decisions.md:33       | --session-id ID          |
+  | claude-integration.md | --resume                 |
+  | query-flow.md:87      | --session-id $SESSION_ID |
+
+  These should be consistent. The correct flag appears to be --resume based on the detailed implementation in claude-integration.md.
+
+  5. Node.js Version Mismatch (docs/architecture/technology-stack.md)
+
+  - Line 16 (Version Summary): Node.js 20.x LTS
+  - Lines 963-964 (Hardware Requirements): Node.js 22.x LTS
+
+  6. OpenSearch Version Mismatch
+
+  | File                       | OpenSearch Version |
+  |----------------------------|--------------------|
+  | technology-stack.md:24,131 | 2.11.x / 2.11.1    |
+  | deployment.md:68           | 2.12.0             |
+
+  7. Neo4j Version Inconsistency
+
+  | File                    | Neo4j Version    |
+  |-------------------------|------------------|
+  | technology-stack.md:460 | 5.15.0-community |
+  | technology-stack.md:903 | 5.26.0-community |
+  | deployment.md:205       | 5.26-community   |
+
+  8. PostgreSQL Image Inconsistency
+
+  | File                    | Image                |
+  |-------------------------|----------------------|
+  | technology-stack.md:130 | postgres:16.1-alpine |
+  | deployment.md:51        | postgres:16-alpine   |
+
+  9. Redis Image Inconsistency
+
+  | File                    | Image              |
+  |-------------------------|--------------------|
+  | technology-stack.md:132 | redis:7.2.4-alpine |
+  | deployment.md:92        | redis:7-alpine     |
+
+  10. Anthropic API Key Contradicts "No API" Policy (Major)
+
+  deployment.md:342-343 includes:
+  # Anthropic (for entity extraction)
+  ANTHROPIC_API_KEY=your_api_key
+
+  This contradicts the core architectural decision stated in multiple files:
+  - initialize.md:29: "We do NOT use the anthropic Python library."
+  - decisions.md:33-53: Decision 2 explicitly states using Claude Code CLI only
+
+  11. Entity Extraction Implementation Conflict
+
+  - decisions.md:225-254 says to use "Claude Haiku" for entity extraction
+  - If using Claude Code CLI (as stated everywhere), there's no way to specifically request Haiku - the CLI uses whatever model is configured
+  - The API key in deployment.md suggests API usage, contradicting the CLI-only approach
+
+  12. Conversation Persistence Phase Mismatch
+
+  | File                             | Persistence Phase |
+  |----------------------------------|-------------------|
+  | query-flow.md:384                | "Phase 6"         |
+  | implementation-phases.md:285-305 | Phase 7           |
+  | phase-stories-matrix.md:379-400  | Phase 7           |
+
+  13. Architecture Diagram Comment Error (architecture/README.md:10)
+
+  States "Evolving knowledge graph (Phase 4)" but the knowledge graph features (K1-K4 user stories) are assigned to Phase 5.
+
+  ---
+  Summary by Severity
+
+  High Severity (could cause implementation confusion):
+  - #2: Neo4j phase (Phase 4 vs 5)
+  x #10/#11: Anthropic API key vs CLI-only policy
+  x #4: CLI flag inconsistency (--session-id vs --resume)
+
+  Medium Severity (version/configuration mismatches):
+  x #5, #6, #7, #8, #9: Version mismatches across files
+  - #3: Missing referenced file
+  - #12: Conversation persistence phase mismatch
+
+  Low Severity (formatting/minor):
+  - #1: Duplicate section numbers
+  - #13: Comment in architecture diagram
