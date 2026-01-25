@@ -3,7 +3,7 @@
 **Read this file at the start of every new Claude Code session.**
 
 **Last Updated**: January 2025
-**Status**: Phases 0-3 Architecture Complete - Ready to Implement Phase 0
+**Status**: Phase 0 Complete - Ready to Implement Phase 1
 
 ---
 
@@ -141,8 +141,8 @@ Claude reads image files directly and extracts visible text. No pytesseract.
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 0 | Environment Setup & Scaffolding | **NEXT: Implement this phase** |
-| 1 | MVP Core | Architecture complete |
+| 0 | Environment Setup & Scaffolding | **COMPLETE** |
+| 1 | MVP Core | **NEXT: Implement this phase** |
 | 2 | Conversational AI (Quick Mode) | Architecture complete |
 | 3 | Intelligent Analysis | Architecture complete |
 | 4 | Agentic Search (Deep Mode) | Not planned |
@@ -235,12 +235,19 @@ for line in text.strip().split('\n'):
 2. Check implementation plans: `docs/implementation/phase{0,1,2,3}.md`
 3. Check architecture docs as needed
 
-**Current work**: Implement Phase 0 (Environment Setup & Scaffolding).
+**Current work**: Implement Phase 1 (MVP Core).
 
-Phase 0 involves:
-- Docker Compose with all infrastructure services
-- Backend scaffolding (FastAPI, SQLAlchemy, Celery)
+Phase 0 is complete:
+- Docker Compose with all infrastructure services (postgres, opensearch, redis, backend, celery-worker, frontend)
+- Backend scaffolding (FastAPI, SQLAlchemy, Celery, Alembic)
 - Frontend scaffolding (Vite, React, Tailwind)
-- Health check endpoints
-- Development tooling (linting, formatting, tests)
-- See `docs/implementation/phase0.md` for full specification
+- Health check endpoint at `/api/health`
+- Verification script: `./scripts/verify-environment.sh`
+- Start environment: `docker compose up -d`
+
+Phase 1 involves:
+- Database models (Video, Segment, etc.)
+- Video upload and processing pipeline
+- WhisperX transcription with speaker diarization
+- Basic search functionality
+- See `docs/implementation/phase1.md` for full specification
