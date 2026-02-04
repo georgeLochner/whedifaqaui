@@ -4,6 +4,10 @@
 
 When a video is uploaded, it goes through a multi-stage processing pipeline. Each stage is implemented as a Celery task, allowing for asynchronous processing and fault tolerance.
 
+**Phased Delivery**:
+- **Phase 1**: Stages 1-4 (Upload → Transcode → Transcribe → Chunk) + Stage 6 (Indexing)
+- **Phase 3**: Adds Stage 5 (Content Analysis with entity extraction, speaker name mapping)
+
 ## Pipeline Stages
 
 ```
@@ -59,20 +63,21 @@ When a video is uploaded, it goes through a multi-stage processing pipeline. Eac
 │                                                                              │
 │  Configurable chunking strategy (see Settings):                             │
 │                                                                              │
-│  MODE: EMBEDDING-BASED (default, fast, free)                                │
+│  MODE: EMBEDDING-BASED (default, fast, free) [Phase 1+]                     │
 │    1. Load Whisper segments from transcript                                 │
 │    2. Generate embeddings for each segment (BGE model)                      │
 │    3. Detect semantic boundaries (similarity drops below threshold)         │
 │    4. Group segments into chunks (target: 200-500 tokens)                   │
 │    5. Generate chunk embeddings                                             │
 │                                                                              │
-│  MODE: LLM-BASED (better quality, uses Claude Code CLI)                     │
+│  MODE: LLM-BASED (better quality, uses Claude Code CLI) [Phase 2+]          │
+│    NOTE: Requires Claude wrapper module introduced in Phase 2               │
 │    1. Build timestamped transcript                                          │
 │    2. Ask LLM to identify topic boundaries and chunk summaries              │
 │    3. Create chunks based on LLM-defined boundaries                         │
 │    4. Generate chunk embeddings (BGE model)                                 │
 │                                                                              │
-│  MODE: BOTH (for comparison)                                                │
+│  MODE: BOTH (for comparison) [Phase 2+]                                     │
 │    - Run both strategies, store with chunking_method label                  │
 │    - Enables A/B testing of retrieval quality                               │
 │                                                                              │
@@ -300,77 +305,103 @@ def process_video(self, video_id: str):
 ```python
 # tasks/transcription.py
 
-from faster_whisper import WhisperModel
+import whisperx
 from celery import shared_task
 import json
 
-# Load model once at worker startup
-whisper_model = None
+# WhisperX provides transcription + speaker diarization in one pipeline
+# It uses faster-whisper internally for transcription, plus pyannote for diarization
 
-def get_whisper_model():
-    global whisper_model
-    if whisper_model is None:
-        whisper_model = WhisperModel(
+whisperx_model = None
+diarize_model = None
+
+def get_whisperx_model(device="cuda"):
+    global whisperx_model
+    if whisperx_model is None:
+        whisperx_model = whisperx.load_model(
             "large-v2",
-            device="cuda",  # or "cpu"
+            device=device,
             compute_type="float16"  # or "int8" for CPU
         )
-    return whisper_model
+    return whisperx_model
+
+def get_diarize_model(device="cuda"):
+    global diarize_model
+    if diarize_model is None:
+        diarize_model = whisperx.DiarizationPipeline(
+            use_auth_token="YOUR_HF_TOKEN",
+            device=device
+        )
+    return diarize_model
 
 @shared_task(bind=True, max_retries=2)
 def transcribe_video(self, video_id: str, audio_path: str):
     update_status(video_id, 'transcribing')
 
     try:
-        model = get_whisper_model()
+        device = "cuda"  # or "cpu"
+        model = get_whisperx_model(device)
+        diarize_model = get_diarize_model(device)
 
-        # 1. Transcribe with word-level timestamps
-        segments_iter, info = model.transcribe(
-            audio_path,
-            beam_size=5,
-            word_timestamps=True,
-            language="en"
+        # 1. Load audio
+        audio = whisperx.load_audio(audio_path)
+
+        # 2. Transcribe with WhisperX
+        result = model.transcribe(audio, batch_size=16, language="en")
+
+        # 3. Align timestamps for word-level accuracy
+        model_a, metadata = whisperx.load_align_model(
+            language_code="en",
+            device=device
+        )
+        result = whisperx.align(
+            result["segments"],
+            model_a,
+            metadata,
+            audio,
+            device
         )
 
-        # 2. Collect Whisper segments (these are our base units)
+        # 4. Speaker diarization
+        diarize_segments = diarize_model(audio)
+        result = whisperx.assign_word_speakers(diarize_segments, result)
+
+        # 5. Collect segments with speaker labels
         whisper_segments = []
         full_text_parts = []
 
-        for segment in segments_iter:
+        for i, segment in enumerate(result["segments"]):
             whisper_segments.append({
-                'id': len(whisper_segments),
-                'start': segment.start,
-                'end': segment.end,
-                'text': segment.text.strip(),
-                'words': [
-                    {'word': w.word, 'start': w.start, 'end': w.end}
-                    for w in segment.words
-                ] if segment.words else []
+                'id': i,
+                'start': segment['start'],
+                'end': segment['end'],
+                'text': segment['text'].strip(),
+                'speaker': segment.get('speaker', None),  # SPEAKER_00, SPEAKER_01, etc.
+                'words': segment.get('words', [])
             })
-            full_text_parts.append(segment.text.strip())
+            full_text_parts.append(segment['text'].strip())
 
         full_text = ' '.join(full_text_parts)
 
-        # 3. Create transcript record
+        # 6. Create transcript record
         transcript = create_transcript(
             video_id=video_id,
             full_text=full_text,
-            language=info.language,
+            language="en",
             word_count=len(full_text.split())
         )
 
-        # 4. Save raw Whisper segments as JSON
+        # 7. Save WhisperX segments as JSON (includes speaker labels)
         transcript_path = f"/data/transcripts/{video_id}.json"
         with open(transcript_path, 'w') as f:
             json.dump({
                 'video_id': video_id,
                 'transcript_id': str(transcript.id),
-                'language': info.language,
-                'duration': info.duration,
-                'whisper_segments': whisper_segments
+                'language': "en",
+                'whisper_segments': whisper_segments  # Includes speaker labels
             }, f, indent=2)
 
-        # 5. Queue semantic chunking
+        # 8. Queue semantic chunking
         semantic_chunk.delay(video_id, str(transcript.id), transcript_path)
 
     except Exception as e:
@@ -727,7 +758,9 @@ Summary:"""
             chunk['summary'] = None  # Skip on error
 ```
 
-### Stage 5: Content Analysis
+### Stage 5: Content Analysis (Phase 3)
+
+> **Note**: This stage is added in Phase 3. In Phase 1, the pipeline skips directly from chunking to indexing.
 
 The content analysis stage uses a single LLM call with the full timestamped transcript.
 This approach provides better context for entity disambiguation and relationship detection
@@ -1051,12 +1084,14 @@ ANALYSIS_CONFIG = {
     },
 }
 
-WHISPER_CONFIG = {
+WHISPERX_CONFIG = {
     'model': 'large-v2',  # or 'medium' for faster processing
     'device': 'cuda',     # or 'cpu'
     'compute_type': 'float16',  # or 'int8' for CPU
     'language': 'en',
-    'speaker_diarization': True,  # Phase 3
+    'batch_size': 16,
+    # Speaker diarization is always enabled via WhisperX (Phase 1)
+    # HuggingFace token required for pyannote models
 }
 
 EMBEDDING_CONFIG = {
@@ -1075,13 +1110,14 @@ SEARCH_CONFIG = {
 
 These settings are stored in a `system_settings` table and exposed via the Settings page:
 
-| Setting | UI Control | Default |
-|---------|------------|---------|
-| Chunking mode | Radio buttons | `embedding` |
-| Similarity threshold | Slider (0.3-0.8) | 0.5 |
-| Entity extraction | Toggle | On |
-| Speaker diarization | Toggle | On |
-| Query mode | Dropdown | Quick |
-| Hybrid search weight | Slider | 0.5 |
+| Setting | UI Control | Default | Phase |
+|---------|------------|---------|-------|
+| Chunking mode | Radio buttons | `embedding` | 1 |
+| Similarity threshold | Slider (0.3-0.8) | 0.5 | 1 |
+| Entity extraction | Toggle | On | 3 |
+| Query mode | Dropdown | Quick | 2 |
+| Hybrid search weight | Slider | 0.5 | 1 |
+
+**Note**: Speaker diarization is always enabled - it's built into WhisperX (Phase 1). Speaker *name mapping* (Phase 3) allows Claude to infer actual names from context.
 
 Changes apply to newly processed videos. Existing videos can be reprocessed via the Library view.

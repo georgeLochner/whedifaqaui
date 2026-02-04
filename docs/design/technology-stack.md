@@ -23,7 +23,8 @@ This document details all technologies, libraries, and frameworks used in Whedif
 | **Database** | PostgreSQL | 16 | 1 |
 | **Search** | OpenSearch | 2.11.x | 1 |
 | **Cache** | Redis | 7.2.x | 1 |
-| **AI/ML** | faster-whisper | 1.0.x | 1 |
+| **AI/ML** | WhisperX | 3.1.x | 1 |
+| **AI/ML** | pyannote.audio | 3.1.x | 1 |
 | **AI/ML** | sentence-transformers | 2.6.x | 1 |
 | **AI/ML** | Claude Code CLI | Latest | 2 |
 | **Graph DB** | Neo4j | 5.15.x | 5 |
@@ -80,7 +81,8 @@ This document details all technologies, libraries, and frameworks used in Whedif
 | psycopg2-binary | 2.9.x | PostgreSQL driver |
 | opensearch-py | 2.4.x | OpenSearch client |
 | ffmpeg-python | 0.2.0 | Video processing |
-| faster-whisper | 1.0.x | Speech-to-text |
+| whisperx | 3.1.x | Transcription + speaker diarization |
+| pyannote.audio | 3.1.x | Speaker diarization models (used by WhisperX) |
 | sentence-transformers | 2.6.x | Embeddings |
 | pydantic | 2.6.x | Data validation |
 | python-multipart | 0.0.6 | File uploads |
@@ -111,8 +113,11 @@ redis==5.0.1
 # Video Processing
 ffmpeg-python==0.2.0
 
-# Transcription
-faster-whisper==1.0.0
+# Transcription + Speaker Diarization
+# WhisperX provides transcription (via faster-whisper) AND speaker diarization (via pyannote)
+whisperx>=3.1.0
+pyannote.audio>=3.1.0
+# Note: Requires HuggingFace token for pyannote models
 # Note: Requires CUDA 11 or 12 depending on ctranslate2 version
 
 # Embeddings
@@ -318,34 +323,27 @@ For one-off processing tasks (entity extraction, chunking), we don't need to per
 
 ## Phase 3: Intelligent Analysis
 
-**Goal**: Entity extraction, speaker diarization, visual content analysis
+**Goal**: Entity extraction, speaker name mapping, visual content analysis
+
+**Clarification**: Speaker *diarization* (labeling segments as SPEAKER_00, SPEAKER_01) is provided by WhisperX in Phase 1. Phase 3 adds speaker *name mapping* where Claude infers actual names from context ("SPEAKER_00" → "John Smith").
 
 ### Additional Backend Packages
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| whisperx | 3.1.x | Speaker diarization (verify latest) |
-| pyannote.audio | 3.1.x | Speaker diarization models (verify latest) |
 | opencv-python | 4.9.x | Frame extraction |
 | pillow | 10.2.x | Image processing |
-| pytesseract | 0.3.x | OCR |
+
+**Note**: No OCR library needed - Claude reads image files directly and extracts visible text.
 
 ```txt
 # requirements-phase3.txt (additions)
 
-# Speaker Diarization
-# NOTE: Verify latest compatible versions before installing
-whisperx>=3.1.0
-pyannote.audio>=3.1.0
-# Requires HuggingFace token for pyannote models
-
-# Visual Content
+# Visual Content Analysis
 opencv-python==4.9.0.80
 pillow==10.2.0
-pytesseract==0.3.10
 
-# Note: Tesseract OCR must be installed on system
-# apt-get install tesseract-ocr
+# Note: No pytesseract/tesseract needed - Claude handles text extraction from images
 ```
 
 ### System Dependencies
@@ -353,29 +351,17 @@ pytesseract==0.3.10
 ```dockerfile
 # Phase 3 system dependencies
 RUN apt-get update && apt-get install -y \
-    tesseract-ocr \
-    tesseract-ocr-eng \
     libgl1-mesa-glx  # For OpenCV
 ```
 
-### HuggingFace Models
+### What Phase 3 Adds (Not Diarization)
 
-| Model | Purpose | Size |
-|-------|---------|------|
-| pyannote/speaker-diarization-3.1 | Speaker identification | ~300MB |
-| pyannote/segmentation-3.0 | Voice activity detection | ~50MB |
-
-```python
-# Speaker diarization setup
-from pyannote.audio import Pipeline
-
-pipeline = Pipeline.from_pretrained(
-    "pyannote/speaker-diarization-3.1",
-    use_auth_token="YOUR_HF_TOKEN"
-)
-```
-
-> **Note**: whisperx and pyannote.audio versions should be verified at implementation time as they are actively developed.
+| Feature | Description |
+|---------|-------------|
+| Speaker name mapping | Claude infers names from transcript context |
+| Speaker mapping UI | Users can correct Claude's inferences |
+| Entity extraction | People, systems, projects extracted from transcripts |
+| Visual frame analysis | Claude describes critical frames and extracts text |
 
 ---
 
@@ -598,8 +584,9 @@ redis==5.0.1
 # Video Processing
 ffmpeg-python==0.2.0
 
-# Transcription
-faster-whisper==1.0.0
+# Transcription + Speaker Diarization
+whisperx>=3.1.0
+pyannote.audio>=3.1.0
 
 # Embeddings
 sentence-transformers==2.6.1
@@ -618,14 +605,9 @@ python-dotenv==1.0.0
 # PHASE 3: INTELLIGENT ANALYSIS
 # =============================================================================
 
-# Speaker Diarization (verify latest compatible versions)
-whisperx>=3.1.0
-pyannote.audio>=3.1.0
-
-# Visual Content
+# Visual Content Analysis (Claude handles text extraction from images)
 opencv-python==4.9.0.80
 pillow==10.2.0
-pytesseract==0.3.10
 
 # =============================================================================
 # PHASE 4: AGENTIC SEARCH
@@ -673,7 +655,8 @@ opensearch-py==2.4.2
 celery==5.3.6
 redis==5.0.1
 ffmpeg-python==0.2.0
-faster-whisper==1.0.0
+whisperx>=3.1.0
+pyannote.audio>=3.1.0
 sentence-transformers==2.6.1
 torch==2.1.2
 python-dotenv==1.0.0
@@ -688,11 +671,9 @@ python-dotenv==1.0.0
 ```txt
 # requirements-phase3.txt
 -r requirements-phase2.txt
-whisperx>=3.1.0
-pyannote.audio>=3.1.0
+# Visual content analysis (Claude handles text extraction from images)
 opencv-python==4.9.0.80
 pillow==10.2.0
-pytesseract==0.3.10
 ```
 
 ```bash
@@ -761,8 +742,6 @@ FROM python:3.11-slim
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    tesseract-ocr \
-    tesseract-ocr-eng \
     libgl1-mesa-glx \
     curl \
     && rm -rf /var/lib/apt/lists/*

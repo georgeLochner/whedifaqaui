@@ -1,7 +1,9 @@
 # Phase 3: High-Level Architectural Plan
 
 **Phase**: Intelligent Analysis
-**Goal**: Enrich content understanding through entity extraction, visual analysis, and speaker features.
+**Goal**: Enrich content understanding through entity extraction, visual analysis, and speaker name mapping.
+
+> **Note**: Speaker *diarization* (labeling as SPEAKER_00, SPEAKER_01) is provided by WhisperX in Phase 1. This phase adds speaker *name mapping* where Claude infers actual names from context.
 
 ---
 
@@ -102,6 +104,11 @@ UPLOAD → VIDEO_PROCESSING → TRANSCRIPTION → CHUNKING
 
 ## Project Structure Changes (Phase 3 Additions)
 
+**Reuses from Phase 2:**
+- `services/claude.py` - Claude wrapper module (all Claude calls go through this)
+- `services/prompt.py` - Prompt templates (extend with entity extraction prompts)
+- `services/output_parser.py` - Pipe-delimited parsing (extend with new record types)
+
 ```
 backend/
 ├── app/
@@ -112,6 +119,9 @@ backend/
 │   │       └── screenshots.py      # NEW: P4 - Screenshot endpoints
 │   │
 │   ├── services/
+│   │   ├── claude.py               # FROM PHASE 2: Claude wrapper (reused)
+│   │   ├── prompt.py               # FROM PHASE 2: Prompt templates (extended)
+│   │   ├── output_parser.py        # FROM PHASE 2: Pipe-delimited parsing (extended)
 │   │   ├── content_analysis.py     # NEW: A3, A4, A2, A1 - Unified Claude analysis
 │   │   ├── entity.py               # NEW: A3 - Entity CRUD & normalization
 │   │   ├── speaker.py              # NEW: A2 - Speaker mapping management
@@ -185,11 +195,14 @@ data/
 
 | Task | Technology | Purpose |
 |------|------------|---------|
-| `content_analysis` | Claude CLI | Single call: entities, relationships, speaker mapping, critical frames |
+| `content_analysis` | Claude CLI (via wrapper) | Single call: entities, relationships, speaker mapping, critical frames |
 | `frame_extraction` | FFmpeg | Extract only the critical frames identified by Claude |
-| `frame_description` | Claude CLI | Describe each frame (visual content + text extraction) |
+| `frame_description` | Claude CLI (via wrapper) | Describe each frame (visual content + text extraction) |
 
 **Key Design Decisions:**
+- All Claude calls use `services/claude.py` wrapper from Phase 2
+- Prompts defined in `services/prompt.py` (extended from Phase 2)
+- Output parsing uses `services/output_parser.py` pipe-delimited format (extended from Phase 2)
 - One Claude call analyzes entire transcript (better context for entity disambiguation)
 - Claude identifies speaker names from context ("as John mentioned earlier...")
 - Claude identifies critical visual moments (max 10 per video, configurable)
@@ -926,10 +939,10 @@ def fuzzy_entity_search(query: str):
 ## Status Flow Update
 
 ```
-Phase 1:
+Phase 1 (WhisperX provides transcription + diarization):
 UPLOADED → PROCESSING → TRANSCRIBING → CHUNKING → INDEXING → READY
                             │
-                            └── Includes speaker diarization (WhisperX)
+                            └── WhisperX provides speaker labels (SPEAKER_00, SPEAKER_01)
 
 Phase 3 (extended):
 UPLOADED → PROCESSING → TRANSCRIBING → CHUNKING
