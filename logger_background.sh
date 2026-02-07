@@ -43,6 +43,7 @@ fi
 TOOL_COUNT=0
 MESSAGE_COUNT=0
 TAIL_PID=""
+COUNTS_FILE=""
 
 # Cleanup function to kill tail subprocess
 cleanup_logger() {
@@ -52,7 +53,11 @@ cleanup_logger() {
     fi
 }
 
-# Trap to ensure tail is always killed, even if this script is terminated
+# Trap to ensure tail is always killed on abnormal exit.
+# Don't delete COUNTS_FILE here — the main code path reads it for the footer.
+# On normal exit, the main code reads and deletes it. On abnormal exit (TERM
+# from parent), the trap fires first; if it deleted the file, the main code
+# (which resumes after the trap handler returns) would find nothing to read.
 trap cleanup_logger EXIT INT TERM
 
 # Function to format timestamp
@@ -198,41 +203,42 @@ process_line() {
     esac
 }
 
+# Create temp file for sharing counts between pipeline subshell and parent.
+# The while loop in a pipeline runs in a subshell, so its variable increments
+# are invisible to the parent process that writes the footer.
+COUNTS_FILE=$(mktemp)
+echo "0 0" > "$COUNTS_FILE"
+
 # Follow the verbose file from the beginning and process all lines (existing + new)
 # Using -n +1 reads from line 1, avoiding a race condition where lines written
 # between an initial read and tail -f -n 0 would be silently lost.
 tail -f -n +1 "$VERBOSE_FILE" 2>/dev/null | while IFS= read -r line; do
     process_line "$line"
+    echo "$MESSAGE_COUNT $TOOL_COUNT" > "$COUNTS_FILE"
 done >> "$OUTPUT_LOG" &
 
 TAIL_PID=$!
 
-# Wait for the verbose file to stop being modified (agent finished)
-# Check every 2 seconds
+# Wait for parent process (run_claude_agent.sh) to exit
 while true; do
     sleep 2
 
-    # Check if parent process (run_claude_agent.sh) is still running
     if ! kill -0 $PPID 2>/dev/null; then
+        # Parent exited — allow pipeline time to process remaining lines
+        sleep 2
         break
-    fi
-
-    # Check if verbose file hasn't been modified in 5 seconds
-    if [[ -f "$VERBOSE_FILE" ]]; then
-        FILE_MTIME=$(stat -c %Y "$VERBOSE_FILE" 2>/dev/null || echo 0)
-        CURRENT_TIME=$(date +%s)
-        TIME_SINCE_MOD=$((CURRENT_TIME - FILE_MTIME))
-
-        # If no modification for 5 seconds AND parent is still alive, keep waiting
-        # If parent died, break
-        if [[ $TIME_SINCE_MOD -ge 5 ]] && ! kill -0 $PPID 2>/dev/null; then
-            break
-        fi
     fi
 done
 
 # Cleanup (trap will also ensure this happens)
 cleanup_logger
+
+# Read final counts from pipeline subshell via temp file
+if [[ -n "$COUNTS_FILE" ]] && [[ -f "$COUNTS_FILE" ]]; then
+    read MESSAGE_COUNT TOOL_COUNT < "$COUNTS_FILE" 2>/dev/null || true
+    rm -f "$COUNTS_FILE"
+    COUNTS_FILE=""
+fi
 
 # Write completion footer
 {

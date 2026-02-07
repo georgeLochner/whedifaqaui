@@ -309,28 +309,32 @@ if [[ -f "$VERBOSE_FILE" ]]; then
         SESSION_ID=$(grep '^{' "$VERBOSE_FILE" | jq -r 'select(.type == "system") | .session_id // empty' 2>/dev/null | head -1)
     else
         # Fallback without jq: use python to parse JSON
+        # Python writes result directly to file (avoids delimiter issues with
+        # multi-line content) and outputs session_id and is_error on separate lines.
         PYTHON_OUTPUT=$(python3 -c "
 import json, sys
-session_id = None
+session_id = ''
 is_error = ''
 result = ''
 for line in open('$VERBOSE_FILE'):
     try:
         obj = json.loads(line)
-        if obj.get('type') == 'system' and session_id is None:
+        if obj.get('type') == 'system' and not session_id:
             session_id = obj.get('session_id', '')
         if obj.get('type') == 'result':
             result = obj.get('result', '')
             is_error = str(obj.get('is_error', '')).lower()
     except: pass
-print(f'{session_id}|||{is_error}|||{result}')
+with open('$RESULT_FILE', 'w') as f:
+    f.write(result)
+print(session_id)
+print(is_error)
 " 2>/dev/null) || {
             echo "WARNING: Neither jq nor python3 available for JSON parsing" >&2
             echo "See $VERBOSE_FILE for raw output" > "$RESULT_FILE"
         }
-        SESSION_ID=$(echo "$PYTHON_OUTPUT" | cut -d'|||' -f1)
-        RESULT_IS_ERROR=$(echo "$PYTHON_OUTPUT" | cut -d'|||' -f2)
-        echo "$PYTHON_OUTPUT" | cut -d'|||' -f3 > "$RESULT_FILE"
+        SESSION_ID=$(echo "$PYTHON_OUTPUT" | sed -n '1p')
+        RESULT_IS_ERROR=$(echo "$PYTHON_OUTPUT" | sed -n '2p')
     fi
 fi
 

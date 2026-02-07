@@ -383,7 +383,7 @@ project/
 │       │   └── logger.pid        # Logger PID (temporary)
 │       └── 5678_task-b/
 │           └── ...
-└── monitor_agent*.sh             # Interactive monitors (separate)
+└── scripts/parse_agent_log*.sh   # Post-mortem log parsers
 ```
 
 ## Summary
