@@ -1,45 +1,52 @@
 services:
-  # PostgreSQL Database
+  # ============================================
+  # DATABASE SERVICES
+  # ============================================
+
   postgres:
     image: postgres:16.1-alpine
-    container_name: whedifaqaui-postgres
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-whedifaqaui}
-      POSTGRES_USER: ${POSTGRES_USER:-whedifaqaui}
+      POSTGRES_USER: whedifaqaui
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: whedifaqaui
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-whedifaqaui} -d ${POSTGRES_DB:-whedifaqaui}"]
+      test: ["CMD-SHELL", "pg_isready -U whedifaqaui"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # OpenSearch
   opensearch:
-    image: opensearchproject/opensearch:2.11.0
-    container_name: whedifaqaui-opensearch
+    image: opensearchproject/opensearch:2.11.1
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     ports:
       - "9200:9200"
-      - "9600:9600"
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -E '\"status\":\"(green|yellow)\"'"]
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # Redis (Celery broker)
   redis:
-    image: redis:7.2-alpine
-    container_name: whedifaqaui-redis
+    image: redis:7.2.4-alpine
+    volumes:
+      - redis_data:/data
     ports:
       - "6379:6379"
     healthcheck:
@@ -48,21 +55,25 @@ services:
       timeout: 5s
       retries: 5
 
-  # FastAPI Backend
+  # ============================================
+  # APPLICATION SERVICES
+  # ============================================
+
   backend:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.backend
-    container_name: whedifaqaui-backend
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-whedifaqaui}:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/${POSTGRES_DB:-whedifaqaui}
+      - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - VIDEO_STORAGE_PATH=/data/videos
+      - TRANSCRIPT_STORAGE_PATH=/data/transcripts
     volumes:
-      - ./backend:/app
-      - ./data:/data
+      - video_data:/data/videos
+      - transcript_data:/data/transcripts
+      - model_cache:/root/.cache
     ports:
       - "8000:8000"
     depends_on:
@@ -72,52 +83,79 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:8000/api/health | grep -q 'ok'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
-  # Celery Worker
-  celery-worker:
+  worker:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.worker
-    container_name: whedifaqaui-worker
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-whedifaqaui}:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/${POSTGRES_DB:-whedifaqaui}
+      - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - VIDEO_STORAGE_PATH=/data/videos
+      - TRANSCRIPT_STORAGE_PATH=/data/transcripts
+      - WHISPER_MODEL=${WHISPER_MODEL:-medium}
+      - WHISPER_DEVICE=${WHISPER_DEVICE:-cpu}
     volumes:
-      - ./backend:/app
-      - ./data:/data
+      - video_data:/data/videos
+      - transcript_data:/data/transcripts
+      - model_cache:/root/.cache
     depends_on:
       postgres:
         condition: service_healthy
+      opensearch:
+        condition: service_healthy
       redis:
         condition: service_healthy
-      backend:
-        condition: service_healthy
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
 
-  # React Frontend
   frontend:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.frontend
-    container_name: whedifaqaui-frontend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+
+  # ============================================
+  # OPTIONAL: GPU WORKER (uncomment if GPU available)
+  # ============================================
+
+  # worker-gpu:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.gpu
+  #   environment:
+  #     - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
+  #     - OPENSEARCH_URL=http://opensearch:9200
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - CELERY_BROKER_URL=redis://redis:6379/0
+  #     - VIDEO_STORAGE_PATH=/data/videos
+  #     - TRANSCRIPT_STORAGE_PATH=/data/transcripts
+  #     - WHISPER_MODEL=large-v2
+  #     - WHISPER_DEVICE=cuda
+  #   volumes:
+  #     - video_data:/data/videos
+  #     - transcript_data:/data/transcripts
+  #     - model_cache:/root/.cache
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=1 -Q transcription
 
 volumes:
   postgres_data:
   opensearch_data:
+  redis_data:
+  video_data:
+  transcript_data:
+  model_cache:
