@@ -253,35 +253,21 @@ This enables:
 
 ### Version Pinning for Docker Dependencies
 
-**Critical for autonomous development:** Pin exact versions of all Docker images to prevent agents from triggering large image downloads mid-development.
+**Pin exact Docker image versions** to prevent agents from triggering large image downloads (OpenSearch = 826MB).
 
-**Best Practices:**
-- **Use patch-level versions**: `postgres:16.1-alpine` NOT `postgres:16-alpine`
-- **Avoid floating tags**: Never use `:latest`, `:stable`, or minor version ranges
-- **Document in technology stack**: Create a dedicated section listing all Docker images
-- **Freeze during active development**: Updates require dedicated tasks with testing
-- **Add to agent rules**: Explicitly prohibit version changes in agent prompts
+**Key practices:**
+- Use patch versions: `postgres:16.1-alpine` NOT `postgres:16-alpine` or `:latest`
+- Document all versions in `technology-stack.md` with freeze warning
+- Add to agent rules: "Never change Docker image versions"
 
-**Why this matters:**
-- Large images (OpenSearch = 826MB, PostgreSQL = 200MB+) cause significant delays
-- Minor version changes can introduce breaking changes mid-sprint
-- Reproducibility requires exact versions across all environments
-- Agents may "helpfully" update versions without understanding impact
-
-**Example version freeze policy:**
+**Example:**
 ```markdown
-## Docker Images (All Phases)
-
-⚠️ THESE VERSIONS ARE FROZEN - Do not change without explicit task
-
-| Service | Version | Docker Image |
-|---------|---------|--------------|
-| PostgreSQL | 16.1 | postgres:16.1-alpine |
-| OpenSearch | 2.11.1 | opensearchproject/opensearch:2.11.1 |
-| Redis | 7.2.4 | redis:7.2.4-alpine |
+⚠️ VERSIONS FROZEN | Service | Docker Image |
+| PostgreSQL | postgres:16.1-alpine |
+| OpenSearch | opensearchproject/opensearch:2.11.1 |
 ```
 
-See [technology-stack.md](design/technology-stack.md) for implementation example.
+See [technology-stack.md](design/technology-stack.md) for full implementation.
 
 ---
 
