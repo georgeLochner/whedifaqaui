@@ -248,7 +248,7 @@ Simply omit the `--central-log` option:
 **Solution:**
 - The logger automatically skips invalid JSON lines
 - Check the original `verbose.jsonl` for corruption
-- The interactive monitoring scripts (`monitor_agent.sh`, `monitor_agent_detailed.sh`) can help debug
+- The interactive monitoring scripts (`parse_agent_log.sh`, `parse_agent_log_detailed.sh`) can help debug
 
 ### Central Log Growing Too Large
 
@@ -281,7 +281,7 @@ Simply omit the `--central-log` option:
 - Persistent log file
 - No interaction needed
 
-### Interactive Monitors (`monitor_agent.sh`, `monitor_agent_detailed.sh`)
+### Interactive Monitors (`parse_agent_log.sh`, `parse_agent_log_detailed.sh`)
 
 **Best for:**
 - Debugging a single agent run
@@ -316,7 +316,7 @@ tail -f logs/agent.log
 
 # If something looks wrong, open detailed monitor on specific run
 cd logs/run/1234567890_dev-test
-../../monitor_agent_detailed.sh --tools-only verbose.jsonl
+../../parse_agent_log_detailed.sh --tools-only verbose.jsonl
 ```
 
 ### Production/CI Workflow
@@ -356,7 +356,7 @@ tail -f logs/debug.log
 
 # If errors appear, use detailed monitor for specific run
 cd logs/run/debug_001
-../../monitor_agent_detailed.sh --full verbose.jsonl > detailed_debug.txt
+../../parse_agent_log_detailed.sh --full verbose.jsonl > detailed_debug.txt
 ```
 
 ## Performance Impact

@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 
-# Enhanced Claude Agent Monitor - Detailed real-time activity viewer
-# Usage: ./monitor_agent_detailed.sh [options] [verbose.jsonl]
+# Enhanced Claude Agent Log Parser - Detailed diagnostic viewer
+# Usage: ./parse_agent_log_detailed.sh [options] [verbose.jsonl]
+#
+# This script parses a completed agent log for diagnostics and debugging.
+# For real-time monitoring, use --central-log with run_claude_agent.sh instead.
 #
 # Options:
 #   --full           Show full output (no truncation)
 #   --tools-only     Only show tool calls
 #   --messages-only  Only show Claude messages
 #   --no-color       Disable colored output
-#   --timestamps     Show full timestamps (not just time)
 #   --help           Show this help
 
 set -euo pipefail
@@ -18,7 +20,6 @@ FULL_OUTPUT=false
 TOOLS_ONLY=false
 MESSAGES_ONLY=false
 NO_COLOR=false
-SHOW_FULL_TIMESTAMPS=false
 LOGFILE=""
 
 # Parse arguments
@@ -40,12 +41,8 @@ while [[ $# -gt 0 ]]; do
             NO_COLOR=true
             shift
             ;;
-        --timestamps)
-            SHOW_FULL_TIMESTAMPS=true
-            shift
-            ;;
         --help)
-            head -n 11 "$0" | tail -n 10
+            head -n 14 "$0" | tail -n 13
             exit 0
             ;;
         *)
@@ -91,15 +88,6 @@ TOOL_CALLS=0
 MESSAGES=0
 ERRORS=0
 
-# Function to format timestamp
-format_time() {
-    if [[ "$SHOW_FULL_TIMESTAMPS" == "true" ]]; then
-        date +"%Y-%m-%d %H:%M:%S"
-    else
-        date +"%H:%M:%S"
-    fi
-}
-
 # Function to truncate text
 truncate_text() {
     local text="$1"
@@ -125,7 +113,6 @@ process_line() {
         return
     fi
 
-    # Test if line is valid JSON
     if ! echo "$line" | jq -e . >/dev/null 2>&1; then
         return
     fi
@@ -142,21 +129,21 @@ process_line() {
             case "$subtype" in
                 hook_started)
                     local hook_name=$(echo "$line" | jq -r '.hook_name // empty')
-                    echo -e "${DIM}[$(format_time)] ${CYAN}SYSTEM${RESET} ${DIM}Hook started: ${hook_name}${RESET}"
+                    echo -e "${DIM}${CYAN}SYSTEM${RESET} ${DIM}Hook started: ${hook_name}${RESET}"
                     ;;
                 hook_response)
                     local hook_name=$(echo "$line" | jq -r '.hook_name // empty')
                     local outcome=$(echo "$line" | jq -r '.outcome // empty')
                     if [[ "$outcome" == "success" ]]; then
-                        echo -e "${DIM}[$(format_time)] ${GREEN}✓${RESET} ${DIM}Hook completed: ${hook_name}${RESET}"
+                        echo -e "${GREEN}✓${RESET} ${DIM}Hook completed: ${hook_name}${RESET}"
                     else
-                        echo -e "${DIM}[$(format_time)] ${RED}✗${RESET} ${DIM}Hook failed: ${hook_name}${RESET}"
+                        echo -e "${RED}✗${RESET} ${DIM}Hook failed: ${hook_name}${RESET}"
                     fi
                     ;;
                 init)
                     local model=$(echo "$line" | jq -r '.model // empty')
                     local cwd=$(echo "$line" | jq -r '.cwd // empty')
-                    echo -e "${DIM}[$(format_time)] ${CYAN}SYSTEM${RESET} ${BOLD}Session initialized${RESET}"
+                    echo -e "${CYAN}SYSTEM${RESET} ${BOLD}Session initialized${RESET}"
                     echo -e "  ${DIM}Model: ${model}${RESET}"
                     echo -e "  ${DIM}CWD: ${cwd}${RESET}"
                     ;;
@@ -169,7 +156,7 @@ process_line() {
             if [[ -n "$text" ]] && [[ "$TOOLS_ONLY" != "true" ]]; then
                 MESSAGES=$((MESSAGES + 1))
                 echo ""
-                echo -e "${DIM}[$(format_time)]${RESET} ${BLUE}${BOLD}CLAUDE MESSAGE #${MESSAGES}:${RESET}"
+                echo -e "${BLUE}${BOLD}CLAUDE MESSAGE #${MESSAGES}:${RESET}"
                 echo -e "${text}" | fold -s -w 80 | sed 's/^/  /'
                 echo ""
             fi
@@ -180,10 +167,10 @@ process_line() {
                 TOOL_CALLS=$((TOOL_CALLS + 1))
                 local tool_id=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_use") | .id // empty' 2>/dev/null | head -1)
 
-                echo -e "${DIM}[$(format_time)]${RESET} ${MAGENTA}${BOLD}TOOL #${TOOL_CALLS}: ${tool_name}${RESET}"
+                echo -e "${MAGENTA}${BOLD}TOOL #${TOOL_CALLS}: ${tool_name}${RESET}"
                 echo -e "  ${DIM}ID: ${tool_id}${RESET}"
 
-                # Show specific tool details - extract directly from line
+                # Show specific tool details
                 case "$tool_name" in
                     Bash)
                         local command=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_use") | .input.command // empty' 2>/dev/null)
@@ -288,8 +275,7 @@ process_line() {
             # Check for tool results
             local tool_result=$(echo "$line" | jq -r '.message.content[]? | select(.type=="tool_result") | . // empty' 2>/dev/null | head -1)
             if [[ -n "$tool_result" ]]; then
-                local tool_use_id=$(echo "$tool_result" | jq -r '.tool_use_id // empty' 2>/dev/null)
-                local is_error=$(echo "$line" | jq -r '.tool_use_result.is_error // .tool_use_result.isImage // empty' 2>/dev/null)
+                local is_error=$(echo "$line" | jq -r '.tool_use_result.is_error // empty' 2>/dev/null)
                 local stdout=$(echo "$line" | jq -r '.tool_use_result.stdout // empty' 2>/dev/null)
                 local stderr=$(echo "$line" | jq -r '.tool_use_result.stderr // empty' 2>/dev/null)
 
@@ -319,11 +305,11 @@ process_line() {
 }
 
 # Print header
-echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${CYAN}║        Claude Agent Monitor - Detailed Real-time Activity Viewer      ║${RESET}"
-echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════════════╝${RESET}"
+echo -e "${BOLD}${CYAN}╔═══════════════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${BOLD}${CYAN}║     Claude Agent Log Parser - Detailed Diagnostic View           ║${RESET}"
+echo -e "${BOLD}${CYAN}╚═══════════════════════════════════════════════════════════════════╝${RESET}"
 echo ""
-echo -e "${DIM}Monitoring: ${LOGFILE}${RESET}"
+echo -e "${DIM}Parsing: ${LOGFILE}${RESET}"
 if [[ "$TOOLS_ONLY" == "true" ]]; then
     echo -e "${DIM}Mode: Tools only${RESET}"
 elif [[ "$MESSAGES_ONLY" == "true" ]]; then
@@ -331,24 +317,17 @@ elif [[ "$MESSAGES_ONLY" == "true" ]]; then
 else
     echo -e "${DIM}Mode: Full activity${RESET}"
 fi
-echo -e "${DIM}Press Ctrl+C to stop${RESET}"
 echo ""
 
-# Process existing content
+# Process log file
 if [[ -s "$LOGFILE" ]]; then
-    echo -e "${DIM}=== Processing existing log entries ===${RESET}"
     while IFS= read -r line; do
         process_line "$line"
     done < "$LOGFILE"
     echo ""
-    echo -e "${DIM}=== Summary of existing entries ===${RESET}"
-    echo -e "${DIM}Messages: ${MESSAGES}, Tool calls: ${TOOL_CALLS}, Errors: ${ERRORS}${RESET}"
-    echo ""
-    echo -e "${DIM}=== Now monitoring for new entries ===${RESET}"
-    echo ""
+    echo -e "${DIM}═══════════════════════════════════════════════════════════════════════${RESET}"
+    echo -e "${DIM}Summary: Messages: ${MESSAGES}, Tool calls: ${TOOL_CALLS}, Errors: ${ERRORS}${RESET}"
+    echo -e "${DIM}═══════════════════════════════════════════════════════════════════════${RESET}"
+else
+    echo -e "${YELLOW}Warning: Log file is empty${RESET}"
 fi
-
-# Follow for new content
-tail -f -n 0 "$LOGFILE" | while IFS= read -r line; do
-    process_line "$line"
-done

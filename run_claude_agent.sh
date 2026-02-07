@@ -27,7 +27,7 @@ Required:
 
 Optional:
     --resume ID            Resume a previous conversation by session ID
-    --model MODEL          Model to use (sonnet|opus|haiku) [default: sonnet]
+    --model MODEL          Model to use (sonnet|opus|haiku) [default: opus]
     --extended-thinking N  Enable extended thinking with N tokens
     --idle-timeout N       Seconds of idle time before termination [default: 60]
     --max-runtime N        Maximum runtime in seconds [default: 3600]

@@ -40,9 +40,20 @@ fi
 } >> "$OUTPUT_LOG"
 
 # Track state
-LAST_POSITION=0
 TOOL_COUNT=0
 MESSAGE_COUNT=0
+TAIL_PID=""
+
+# Cleanup function to kill tail subprocess
+cleanup_logger() {
+    if [[ -n "$TAIL_PID" ]] && kill -0 "$TAIL_PID" 2>/dev/null; then
+        kill "$TAIL_PID" 2>/dev/null || true
+        wait "$TAIL_PID" 2>/dev/null || true
+    fi
+}
+
+# Trap to ensure tail is always killed, even if this script is terminated
+trap cleanup_logger EXIT INT TERM
 
 # Function to format timestamp
 format_time() {
@@ -187,18 +198,12 @@ process_line() {
     esac
 }
 
-# Follow the verbose file and process new lines
-# Process existing content first
-if [[ -s "$VERBOSE_FILE" ]]; then
-    while IFS= read -r line; do
-        process_line "$line"
-    done < "$VERBOSE_FILE" >> "$OUTPUT_LOG"
-fi
-
-# Then follow for new content
-tail -f -n 0 "$VERBOSE_FILE" 2>/dev/null | while IFS= read -r line; do
-    process_line "$line" >> "$OUTPUT_LOG"
-done &
+# Follow the verbose file from the beginning and process all lines (existing + new)
+# Using -n +1 reads from line 1, avoiding a race condition where lines written
+# between an initial read and tail -f -n 0 would be silently lost.
+tail -f -n +1 "$VERBOSE_FILE" 2>/dev/null | while IFS= read -r line; do
+    process_line "$line"
+done >> "$OUTPUT_LOG" &
 
 TAIL_PID=$!
 
@@ -226,8 +231,8 @@ while true; do
     fi
 done
 
-# Kill the tail process
-kill $TAIL_PID 2>/dev/null || true
+# Cleanup (trap will also ensure this happens)
+cleanup_logger
 
 # Write completion footer
 {
