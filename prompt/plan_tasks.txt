@@ -1,0 +1,214 @@
+# Task Planning Prompt
+
+You are planning implementation tasks for a specific feature. Your job is to decompose the feature into well-scoped tasks that coding agents can complete.
+
+## Your Task
+
+1. Read and understand the feature description
+2. Read referenced design documentation
+3. Create implementation tasks with appropriate scope
+4. Set up task dependencies for sequential execution
+
+## Step 1: Understand the Feature
+
+Run `bd show <feature-id>` to read the full feature description. This contains:
+- What the feature delivers
+- Files to create/modify
+- Technical context and design decisions
+- Acceptance criteria
+
+Also read any design docs referenced in the feature description.
+
+## Step 2: Task Sizing Rules
+
+Each task must be scoped so a coding agent can complete it within context limits.
+
+### Hard Constraints
+
+| Constraint | Limit | Rationale |
+|------------|-------|-----------|
+| Files modified | 1-3 | More files = more context = higher failure risk |
+| Files read for context | 5-8 max | Reading files consumes context budget |
+| Deliverable | Exactly 1 | Clear completion criteria |
+| Description length | 3-4 sentences | If longer, task is too complex |
+
+### Task Should Have
+
+- **Clear deliverable**: "Create X that does Y" not "work on X"
+- **Verifiable completion**: How do you know it's done? (tests pass, endpoint responds, component renders)
+- **No exploration**: Research belongs in feature planning, not task execution
+- **Specific file references**: Name the exact files to create or modify
+
+### Task Should NOT Have
+
+- Ambiguous scope ("improve", "refactor", "clean up")
+- Multiple unrelated deliverables
+- Dependency on discovering how things work
+- Need to read more than 8 files
+
+### Examples
+
+**Good task**:
+> Create the Video SQLAlchemy model in `backend/app/models/video.py` with fields: id (UUID), title, file_path, status, created_at. Add the model to `backend/app/models/__init__.py`. Verify by running alembic revision.
+
+**Bad task** (too big):
+> Implement the video upload feature including the model, service, API endpoint, and frontend form.
+
+**Bad task** (too vague):
+> Set up the database stuff.
+
+**Bad task** (requires exploration):
+> Figure out how to integrate WhisperX and implement it.
+
+## Step 3: Identify Natural Task Boundaries
+
+Look at the feature's "Files to Create" and "Files to Modify" lists. Common patterns:
+
+### Backend Feature
+1. Create/update database model(s)
+2. Create Pydantic schemas
+3. Implement service layer logic
+4. Create API endpoint(s)
+5. Write tests
+
+### Frontend Feature
+1. Create TypeScript types
+2. Create API client functions
+3. Implement component(s)
+4. Create page and wire up routing
+5. Write tests
+
+### Processing/Pipeline Feature
+1. Implement core logic (service)
+2. Create Celery task wrapper
+3. Wire up task triggers
+4. Write tests
+
+### Infrastructure Feature
+1. Create configuration
+2. Set up connections/clients
+3. Write migrations
+4. Verify with smoke test
+
+## Step 4: Create Tasks
+
+For each task:
+
+```bash
+bd create --title="[Action] [Thing]" --type=task --priority=2 --parent=<feature-id> --description="[Full task description]"
+```
+
+### Task Description Template
+
+```markdown
+## Objective
+[One sentence: what to create/modify and why]
+
+## Files to Modify
+- `path/to/file.py` - [what to add/change]
+
+## Files to Read (Context)
+- `path/to/reference.py` - [why you need to read this]
+
+## Implementation Details
+[Specific guidance - function signatures, patterns to follow, etc.]
+
+## Acceptance Criteria
+- [ ] [Specific verifiable criterion]
+- [ ] [Another criterion]
+
+## Tests
+[Which tests to write or run to verify]
+```
+
+## Step 5: Set Up Dependencies
+
+Tasks within a feature execute sequentially:
+
+```bash
+# Get the IDs of tasks you just created
+# Assume: task-001, task-002, task-003
+
+# First task blocked by this "Plan tasks" task
+bd dep add task-001 <this-plan-task-id>
+
+# Each subsequent task blocked by previous
+bd dep add task-002 task-001
+bd dep add task-003 task-002
+```
+
+This ensures:
+1. When you close this "Plan tasks" task, the first implementation task becomes ready
+2. Each task completes before the next begins
+
+## Step 6: Verify Before Closing
+
+Before closing this task, verify:
+
+- [ ] All tasks created with clear descriptions
+- [ ] Task count is reasonable (3-8 tasks typical)
+- [ ] Each task modifies 1-3 files
+- [ ] Each task has ONE clear deliverable
+- [ ] Dependencies set: first task blocked by this task, chain through to last
+- [ ] No circular dependencies
+
+Run `bd show <feature-id>` to see all children and verify the structure.
+
+## Common Mistakes to Avoid
+
+1. **Task too big**: If description needs more than 4 sentences, split it
+2. **Missing context files**: Agent will waste context rediscovering what you already know
+3. **Implicit dependencies**: If task B needs code from task A, make that explicit
+4. **Forgetting tests**: Include test tasks, don't assume they'll happen
+5. **Vague acceptance criteria**: "It works" is not verifiable
+
+## Example: Video Upload API Feature
+
+```bash
+# Task 1: Database model
+bd create --title="Create Video database model" --type=task --parent=beads-feat-002 \
+  --description="## Objective
+Create the Video SQLAlchemy model for storing video metadata.
+
+## Files to Modify
+- \`backend/app/models/video.py\` - Create new file with Video model
+- \`backend/app/models/__init__.py\` - Export Video model
+
+## Files to Read
+- \`docs/design/data-model.md\` - Schema definition
+- \`backend/app/core/database.py\` - Base model pattern
+
+## Implementation Details
+Fields: id (UUID, PK), title (str), file_path (str), status (enum), recording_date (date), participants (array), created_at, updated_at.
+Use SQLAlchemy 2.0 style with mapped_column.
+
+## Acceptance Criteria
+- [ ] Model class defined with all fields
+- [ ] Exported from models package
+- [ ] Alembic migration generated successfully"
+# Returns: beads-task-101
+
+# Task 2: Pydantic schemas
+bd create --title="Create Video Pydantic schemas" --type=task --parent=beads-feat-002 \
+  --description="..."
+# Returns: beads-task-102
+
+# Task 3: Video service
+bd create --title="Implement Video service" --type=task --parent=beads-feat-002 \
+  --description="..."
+# Returns: beads-task-103
+
+# Set dependencies
+bd dep add beads-task-101 <this-plan-task-id>  # First task waits for planning
+bd dep add beads-task-102 beads-task-101       # Schemas after model
+bd dep add beads-task-103 beads-task-102       # Service after schemas
+```
+
+## After Creating All Tasks
+
+Close this planning task:
+```bash
+bd close <this-plan-task-id>
+```
+
+This unblocks the first implementation task, and the coordinator will begin assigning work.

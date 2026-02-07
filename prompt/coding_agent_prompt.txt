@@ -1,38 +1,104 @@
 # Coding Agent Protocol
 
+## Environment
+
+All commands run inside Docker containers via `docker compose exec <service> <command>`.
+
+```bash
+# Start/stop (services run in background)
+docker compose up -d              # Start all services
+docker compose down               # Stop all services
+
+# Verify running
+curl -s http://localhost:8000/api/health | grep -q '"status":"ok"' && echo "Backend OK"
+curl -s http://localhost:9200/_cluster/health | grep -q '"status"' && echo "OpenSearch OK"
+
+# Run commands in containers
+docker compose exec backend pytest tests/unit/test_video.py -v
+docker compose exec backend alembic upgrade head
+docker compose exec frontend npm test
+```
+
+Services: backend(:8000), frontend(:3000), postgres(:5432), opensearch(:9200), redis(:6379)
+
+---
+
 ## Task Start
+
 1. Run `bd show <feature-id>` and `bd show <task-id>` for context
 2. If other tasks in the feature are already closed: review their descriptions to understand what's built
 3. If current task has notes from previous agent: check `git status`, `git log`, review their progress
 4. Run `bd update <task-id> --status=in_progress`
 
+---
+
 ## During Work
+
 - Commit incrementally after each logical unit of progress
 - Reference task-id in commit messages
 
+---
+
+## Verification Loop
+
+Before closing any task, you MUST verify your implementation works:
+
+1. **Run the tests specified in the task description**
+   ```bash
+   docker compose exec backend pytest path/to/test.py -v
+   ```
+
+2. **If tests fail:**
+   - Read the failure output carefully
+   - Fix the issue in your code
+   - Run the tests again
+   - Repeat until all tests pass
+
+3. **If no tests are specified, verify manually:**
+   - For API endpoints: `curl` or use the API
+   - For frontend components: check browser at localhost:3000
+   - For models/migrations: verify with `alembic upgrade head`
+
+4. **Only close the task when:**
+   - All specified tests pass
+   - No regressions in related tests
+   - Code is committed
+
+**Do NOT close a task with failing tests.** The tests are your signal that the implementation is correct.
+
+---
+
 ## Task Complete
+
 Only close when fully done (code works, tests pass, changes committed):
-```
+```bash
 bd close <task-id>
 ```
 
+---
+
 ## Context Limit Reached
+
 If you cannot finish (read 10+ files, 15+ turns, task larger than expected):
 
 1. Add handoff note to task:
-```
-bd update <task-id> --description="[original description]
+   ```bash
+   bd update <task-id> --description="[original description]
 
----
-Handoff: Completed X. Remaining: Y. Modified: file1, file2."
-```
+   ---
+   Handoff: Completed X. Remaining: Y. Modified: file1, file2."
+   ```
 
 2. Commit with message noting partial progress
 3. Leave task open and exit
 
+---
+
 ## Rules
+
 - Only work on your assigned task - do not start additional tasks
 - Exit after completing (or handing off) your assigned task
 - Never close incomplete tasks
+- Never close tasks with failing tests
 - Never redo work previous agents committed
 - Tasks should modify 1-3 files, read 5-8 max
