@@ -4,10 +4,11 @@
 
 All commands run inside Docker containers via `docker compose exec <service> <command>`.
 
+**Start services with this command:**
+
 ```bash
-# Start/stop (services run in background)
-docker compose up -d              # Start all services
-docker compose down               # Stop all services
+# Always use development mode (code volume-mapped, hot reload enabled)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Verify running
 curl -s http://localhost:8000/api/health | grep -q '"status":"ok"' && echo "Backend OK"
@@ -17,9 +18,14 @@ curl -s http://localhost:9200/_cluster/health | grep -q '"status"' && echo "Open
 docker compose exec backend pytest tests/unit/test_video.py -v
 docker compose exec backend alembic upgrade head
 docker compose exec frontend npm test
+
+# Stop services
+docker compose down
 ```
 
 Services: backend(:8000), frontend(:3000), postgres(:5432), opensearch(:9200), redis(:6379)
+
+**Key Principle:** Edit code on host filesystem (not inside containers). Changes reflect immediately in running containers. No rebuild needed.
 
 ---
 
@@ -70,7 +76,12 @@ Before closing any task, you MUST verify your implementation works:
 
 ## Task Complete
 
-Only close when fully done (code works, tests pass, changes committed):
+Before closing, ask yourself: **Did I take any shortcuts I know are suboptimal?**
+(Missing error handling, hardcoded values, skipped validation, incomplete tests, TODO comments, etc.)
+
+If yes: Either fix them now, or create a follow-up task to track the technical debt.
+
+Only close when fully done (code works, tests pass, changes committed, no untracked shortcuts):
 ```bash
 bd close <task-id>
 ```
@@ -101,4 +112,5 @@ If you cannot finish (read 10+ files, 15+ turns, task larger than expected):
 - Never close incomplete tasks
 - Never close tasks with failing tests
 - Never redo work previous agents committed
+- Never change Docker image versions (see "Docker Images" section in docs/design/technology-stack.md)
 - Tasks should modify 1-3 files, read 5-8 max

@@ -37,6 +37,8 @@ Whedifaqaui is deployed using Docker Compose, which orchestrates all required se
 
 ## Docker Compose Configuration
 
+**⚠️ Image Versions Are Frozen** - Do not change versions shown below. See `technology-stack.md` for version freeze policy.
+
 ```yaml
 # docker-compose.yml
 
@@ -346,9 +348,11 @@ WHISPER_MODEL=medium      # CPU
 
 ### Development
 
+**For development work (recommended)**, use development mode with volume mounts and hot reload:
+
 ```bash
-# Start all services
-docker compose up -d
+# Start all services with development overrides
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # View logs
 docker compose logs -f
@@ -357,12 +361,15 @@ docker compose logs -f
 docker compose logs -f backend
 docker compose logs -f worker
 
-# Rebuild after code changes
-docker compose up -d --build backend worker
+# Changes to code reflect immediately (no rebuild needed)
+# Just restart service if needed:
+docker compose restart backend
 
 # Stop all services
 docker compose down
 ```
+
+**For detailed development workflow**, including when to use dev vs production mode, see [Development Documentation](../development/docker-workflow.md).
 
 ### Production
 

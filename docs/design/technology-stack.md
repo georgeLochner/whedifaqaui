@@ -8,6 +8,31 @@ This document details all technologies, libraries, and frameworks used in Whedif
 
 ---
 
+## ⚠️ Version Freeze Policy
+
+**All versions in this document are FROZEN** for the duration of active development.
+
+**DO NOT:**
+- Update Docker image versions (postgres, opensearch, redis, neo4j)
+- Update major/minor versions of Python/Node packages
+- Use floating tags (`:latest`, `:16-alpine` instead of `:16.1-alpine`)
+
+**WHY:**
+- Prevents large image re-downloads across team (OpenSearch = 826MB)
+- Ensures reproducibility across all environments
+- Avoids mid-development breaking changes
+- Maintains consistency between dev, test, and production
+
+**TO UPDATE A VERSION:**
+1. Create a dedicated task for version upgrade evaluation
+2. Test thoroughly across all phases
+3. Update this document + docker-compose.yml + Dockerfiles simultaneously
+4. Document breaking changes and migration steps
+
+**Current frozen versions effective as of**: January 2025
+
+---
+
 ## Version Summary
 
 | Category | Technology | Version | Phase Introduced |
@@ -28,6 +53,39 @@ This document details all technologies, libraries, and frameworks used in Whedif
 | **AI/ML** | sentence-transformers | 2.6.x | 1 |
 | **AI/ML** | Claude Code CLI | Latest | 2 |
 | **Graph DB** | Neo4j | 5.15.x | 5 |
+
+---
+
+## Docker Images (All Phases)
+
+**⚠️ THESE VERSIONS ARE FROZEN - Do not change without explicit task**
+
+| Service | Version | Docker Image | Phase |
+|---------|---------|--------------|-------|
+| PostgreSQL | **16.1** | `postgres:16.1-alpine` | 1 |
+| OpenSearch | **2.11.1** | `opensearchproject/opensearch:2.11.1` | 1 |
+| Redis | **7.2.4** | `redis:7.2.4-alpine` | 1 |
+| Neo4j | **5.15.0** | `neo4j:5.15.0-community` | 5 |
+
+**Base Images for Application Containers:**
+
+| Container | Base Image | Version |
+|-----------|------------|---------|
+| Backend | `python:3.11-slim` | 3.11 |
+| Worker | `python:3.11-slim` | 3.11 |
+| Worker-GPU | `nvidia/cuda:12.1.0-runtime-ubuntu22.04` | CUDA 12.1 |
+| Frontend | `node:20-alpine` | Node 20 LTS |
+
+**Why these specific versions:**
+- **Patch version pinning** (16.1, not 16.x) prevents unexpected minor updates
+- **Alpine variants** reduce image size where available
+- **LTS versions** for Node.js (20.x) and Python (3.11)
+- **Specific CUDA version** for GPU worker reproducibility
+
+**To verify versions in use:**
+```bash
+docker compose config | grep "image:"
+```
 
 ---
 
