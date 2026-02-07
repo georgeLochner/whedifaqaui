@@ -77,11 +77,31 @@ Each feature description must be **comprehensive enough that an agent can start 
 ## Implementation Notes
 [Specific technical guidance - patterns to follow, APIs to use, gotchas to avoid]
 
-## Acceptance Criteria
-[From test spec - specific test IDs or criteria that validate this feature]
+## Testing Requirements
+
+### Test Specification Reference
+- Document: `docs/testing/phase{N}-test-specification.md`
+- Sections: [Which sections cover this feature's user stories]
+
+### Unit Tests
+[List test IDs from spec, e.g., V1-U01, V1-U02, V1-F01]
+
+### Integration Tests
+[List test IDs, e.g., V1-I01, V1-I02]
+
+### E2E Scenarios
+[List E2E scenarios this feature contributes to, e.g., E2E-01, E2E-02]
+[Note which scenarios become runnable after this feature completes]
+
+### Quality Gate
+This feature is NOT complete until:
+- All unit tests for covered stories are passing
+- All integration tests for covered stories are passing
+- Any E2E scenarios that become runnable with this feature must pass
 
 ## Reference Documentation
 - `docs/design/relevant-doc.md` - [what it covers]
+- `docs/testing/phase{N}-test-specification.md` - [relevant sections]
 ```
 
 ## Step 4: Create Features and Plan Tasks
@@ -171,7 +191,99 @@ bd dep add beads-task-003 beads-feat-002  # Plan UI waits for API feature
 - [ ] Each feature has a "Plan tasks" child task
 - [ ] Dependencies set so features execute in correct order
 - [ ] First "Plan tasks" task has no blockers (ready to execute)
-- [ ] Feature descriptions include: files to create/modify, acceptance criteria, reference docs
+- [ ] Feature descriptions include:
+  - [ ] Files to create/modify
+  - [ ] Testing requirements section with test IDs from spec
+  - [ ] E2E scenarios this feature contributes to
+  - [ ] Quality gate criteria
+  - [ ] Reference documentation
+
+## Step 6: Create Regression Testing Feature
+
+The **final feature** of every phase MUST be a Regression Testing feature. This is the phase-level quality gate.
+
+### Purpose
+
+- Verify all phase functionality works end-to-end
+- Catch regressions from prior phases
+- Document expected system behavior
+- Gate phase completion
+
+### Regression Feature Template
+
+```markdown
+# Feature: Phase {N} Regression Testing
+
+## Overview
+Execute the full regression test pack to verify Phase {N} functionality
+and ensure no regressions from prior work. This is the final quality gate
+before the phase is considered complete.
+
+## Regression Pack Location
+docs/testing/regression-pack.md
+
+## What This Feature Does
+- Executes all regression tests for Phase {N} and prior phases
+- Verifies expected outcomes
+- Reports PASS/FAIL for each test
+- Blocks phase completion until all tests pass
+
+## Testing Requirements
+- All tests in regression pack must pass
+- Any failures must be fixed before closing
+
+## Reference Documentation
+- docs/testing/regression-pack.md - Test scenarios to execute
+- docs/testing/phase{N}-test-specification.md - Detailed acceptance criteria
+```
+
+### Regression Feature Tasks
+
+The "Plan tasks" for this feature should create a single task:
+
+```markdown
+## Objective
+Execute all regression tests and verify Phase {N} functionality.
+
+## Instructions
+1. Read docs/testing/regression-pack.md
+2. Execute each test scenario in "Phase {N} Tests" AND all prior phase sections
+3. For each test:
+   - Follow the steps exactly
+   - Verify expected outcomes
+   - Record PASS or FAIL with details
+4. If any test fails:
+   - Document the failure in detail
+   - Do NOT close this task
+   - Create a blocking bug task to fix the issue
+5. Only close when ALL regression tests pass
+
+## Report Format
+For each test, output:
+- Test ID: PASS/FAIL
+- Details: [what was observed]
+
+## Acceptance Criteria
+- [ ] All regression tests executed
+- [ ] All tests PASS
+- [ ] Results documented
+```
+
+### After Phase Completion
+
+After the regression testing feature closes:
+1. The phase is complete
+2. Add any new regression tests to the pack for the next phase
+3. Future phases will run the full cumulative pack
+
+### Dependency
+
+The Regression Testing feature's "Plan tasks" task must be blocked by all other features in the phase:
+
+```bash
+# Regression testing waits for all implementation features
+bd dep add beads-plan-regression beads-feature-last-impl
+```
 
 ## Notes
 
@@ -179,3 +291,4 @@ bd dep add beads-task-003 beads-feat-002  # Plan UI waits for API feature
 - Do NOT start any implementation work
 - Focus on clear feature boundaries and comprehensive descriptions
 - The quality of feature descriptions directly impacts agent effectiveness
+- Always include Regression Testing as the final feature

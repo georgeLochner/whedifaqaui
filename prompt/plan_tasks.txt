@@ -69,26 +69,136 @@ Look at the feature's "Files to Create" and "Files to Modify" lists. Common patt
 2. Create Pydantic schemas
 3. Implement service layer logic
 4. Create API endpoint(s)
-5. Write tests
+5. Write unit tests
+6. Run integration tests (E2E verification)
 
 ### Frontend Feature
 1. Create TypeScript types
 2. Create API client functions
 3. Implement component(s)
 4. Create page and wire up routing
-5. Write tests
+5. Write unit tests
+6. Run E2E verification (Playwright)
 
 ### Processing/Pipeline Feature
 1. Implement core logic (service)
 2. Create Celery task wrapper
 3. Wire up task triggers
-4. Write tests
+4. Write unit tests
+5. Run integration tests (E2E verification)
 
 ### Infrastructure Feature
 1. Create configuration
 2. Set up connections/clients
 3. Write migrations
 4. Verify with smoke test
+
+## Step 3b: Mandatory Testing Tasks
+
+Every feature MUST include testing tasks. Tests are the agent's feedback loop to verify implementation correctness.
+
+### Testing Task Requirements
+
+Each implementation task should specify which tests to run for verification. Additionally, create dedicated testing tasks:
+
+1. **Unit test task(s)**: Write and run tests for individual components
+   - Reference specific test IDs from the test spec (e.g., V1-U01, V1-U02)
+   - Include the pytest/vitest command to run
+
+2. **Integration/E2E verification task** (MUST be the final task): Verify the feature works end-to-end
+   - Tests the maximum scope possible given what's implemented
+   - References test IDs from the test spec
+   - Includes exact commands to run tests
+   - Gates feature completion
+
+### E2E Scope by Feature Position
+
+The E2E verification task should test as much of the stack as exists:
+
+| Feature Type | E2E Scope |
+|--------------|-----------|
+| Database/Models | Verify schema, test CRUD operations |
+| Backend Services | Service-level integration with DB |
+| Backend API | API-level E2E: HTTP → DB → response |
+| Frontend Components | Component tests with mocked API |
+| Frontend Pages (full stack) | Playwright: browser → API → DB → UI |
+
+### E2E Verification Task Template
+
+```markdown
+## Objective
+Verify [Feature Name] works end-to-end at [scope level].
+
+## Test Specification Reference
+- Document: docs/testing/phase{N}-test-specification.md
+- Section: [relevant section]
+- Test IDs: [list specific test IDs]
+
+## Tests to Run
+
+### Unit Tests
+\`\`\`bash
+cd backend && pytest tests/unit/test_[module].py -v
+\`\`\`
+Expected: All [X] tests pass
+
+### Integration Tests
+\`\`\`bash
+cd backend && pytest tests/integration/test_[feature].py -v
+\`\`\`
+Expected: All [X] tests pass
+
+### E2E Tests (if applicable)
+\`\`\`bash
+cd e2e && npx playwright test [spec].spec.ts
+\`\`\`
+Expected: Scenario passes, screenshots captured
+
+## Acceptance Criteria
+- [ ] All unit tests passing
+- [ ] All integration tests passing
+- [ ] E2E scenario passes (if applicable)
+- [ ] No regressions in existing tests
+```
+
+## Step 3c: Cross-Feature E2E Tests
+
+Some E2E scenarios span multiple features. When planning tasks, check if this feature completes the chain for any cross-feature E2E scenario.
+
+### How to Identify Cross-Feature E2E Tests
+
+1. Read the test specification's E2E section
+2. For each E2E scenario, note which user stories it requires
+3. Check if this feature covers the LAST required user story
+4. If yes → include that E2E scenario in this feature's final testing task
+
+### Example
+
+E2E-01 "Upload-to-search flow" requires: V1, V2, V3, S1
+
+- Feature A covered: V1, V2, V3 (Upload + Processing)
+- Feature B covers: S1 (Search)
+- Feature B is the LAST dependency for E2E-01
+- Therefore: Feature B's E2E task must include E2E-01
+
+### Cross-Feature E2E Task Addition
+
+When this feature completes a cross-feature E2E scenario, add to the E2E verification task:
+
+```markdown
+## Cross-Feature E2E Scenarios
+
+This feature completes the requirements for:
+- E2E-XX: [scenario name]
+  - Required stories: [list]
+  - All prerequisites now complete
+
+### Run Cross-Feature E2E
+\`\`\`bash
+cd e2e && npx playwright test e2e-xx.spec.ts
+\`\`\`
+Expected: Full scenario passes
+```
 
 ## Step 4: Create Tasks
 
@@ -117,8 +227,23 @@ bd create --title="[Action] [Thing]" --type=task --priority=2 --parent=<feature-
 - [ ] [Specific verifiable criterion]
 - [ ] [Another criterion]
 
-## Tests
-[Which tests to write or run to verify]
+## Verification
+
+### Tests to Write
+[If this task includes writing tests, specify which test IDs from the spec]
+
+### Tests to Run
+```bash
+[Exact command to run tests, e.g.: cd backend && pytest tests/unit/test_video.py -v]
+```
+Expected: [What success looks like, e.g., "All 4 tests pass"]
+
+### Verification Loop
+The agent must:
+1. Implement the code
+2. Run the tests specified above
+3. If tests fail: fix and re-run
+4. Only mark task complete when tests pass
 ```
 
 ## Step 5: Set Up Dependencies
@@ -149,6 +274,10 @@ Before closing this task, verify:
 - [ ] Task count is reasonable (3-8 tasks typical)
 - [ ] Each task modifies 1-3 files
 - [ ] Each task has ONE clear deliverable
+- [ ] Each task includes specific test commands to run
+- [ ] Final task is E2E verification task
+- [ ] E2E task references test spec IDs
+- [ ] Cross-feature E2E scenarios included if this feature completes them
 - [ ] Dependencies set: first task blocked by this task, chain through to last
 - [ ] No circular dependencies
 
@@ -159,8 +288,11 @@ Run `bd show <feature-id>` to see all children and verify the structure.
 1. **Task too big**: If description needs more than 4 sentences, split it
 2. **Missing context files**: Agent will waste context rediscovering what you already know
 3. **Implicit dependencies**: If task B needs code from task A, make that explicit
-4. **Forgetting tests**: Include test tasks, don't assume they'll happen
-5. **Vague acceptance criteria**: "It works" is not verifiable
+4. **No test commands**: Every task must specify exact commands to verify it works
+5. **Missing E2E task**: The final task MUST be E2E verification
+6. **Vague acceptance criteria**: "It works" is not verifiable - specify test IDs and commands
+7. **Forgetting cross-feature E2E**: Check if this feature unlocks any E2E scenarios
+8. **Tests written but not run**: Tests are a feedback loop - agents must run them
 
 ## Example: Video Upload API Feature
 
@@ -185,7 +317,14 @@ Use SQLAlchemy 2.0 style with mapped_column.
 ## Acceptance Criteria
 - [ ] Model class defined with all fields
 - [ ] Exported from models package
-- [ ] Alembic migration generated successfully"
+- [ ] Alembic migration generated successfully
+
+## Verification
+\`\`\`bash
+cd backend && alembic revision --autogenerate -m 'add video model'
+cd backend && alembic upgrade head
+\`\`\`
+Expected: Migration generates and applies without errors"
 # Returns: beads-task-101
 
 # Task 2: Pydantic schemas
@@ -198,10 +337,50 @@ bd create --title="Implement Video service" --type=task --parent=beads-feat-002 
   --description="..."
 # Returns: beads-task-103
 
+# Task 4: API endpoints
+bd create --title="Create Video API endpoints" --type=task --parent=beads-feat-002 \
+  --description="..."
+# Returns: beads-task-104
+
+# Task 5: E2E Verification (FINAL TASK)
+bd create --title="E2E verification for Video Upload API" --type=task --parent=beads-feat-002 \
+  --description="## Objective
+Verify Video Upload API works end-to-end.
+
+## Test Specification Reference
+- Document: docs/testing/phase1-test-specification.md
+- Section: V1 (Video Upload)
+- Test IDs: V1-U01 to V1-U04, V1-I01 to V1-I04
+
+## Tests to Run
+
+### Unit Tests
+\`\`\`bash
+cd backend && pytest tests/unit/test_video_schema.py -v
+\`\`\`
+Expected: All V1-U tests pass
+
+### Integration Tests
+\`\`\`bash
+cd backend && pytest tests/integration/test_video_api.py -v
+\`\`\`
+Expected: All V1-I tests pass
+
+## Acceptance Criteria
+- [ ] All unit tests passing
+- [ ] All integration tests passing
+- [ ] POST /videos creates record and returns ID
+- [ ] GET /videos returns list
+- [ ] GET /videos/{id}/status returns current status
+- [ ] No regressions in existing tests"
+# Returns: beads-task-105
+
 # Set dependencies
 bd dep add beads-task-101 <this-plan-task-id>  # First task waits for planning
 bd dep add beads-task-102 beads-task-101       # Schemas after model
 bd dep add beads-task-103 beads-task-102       # Service after schemas
+bd dep add beads-task-104 beads-task-103       # API after service
+bd dep add beads-task-105 beads-task-104       # E2E verification last
 ```
 
 ## After Creating All Tasks
