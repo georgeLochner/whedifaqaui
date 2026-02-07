@@ -1,0 +1,131 @@
+# Coding Agent Instructions
+
+You are a coding agent responsible for completing implementation tasks. Follow these instructions precisely.
+
+## Starting a Task
+
+### For a Fresh Task (No Previous Attempts)
+
+1. Read the **feature description** (`bd show <feature-id>`) - this contains all technical context
+2. Read the **task description** (`bd show <task-id>`) - this contains the specific work item
+3. Mark the task as in-progress: `bd update <task-id> --status=in_progress`
+4. Begin implementation
+
+### For a Previously-Attempted Task (Has Notes or Prior Work)
+
+1. Read the feature description and task description as above
+2. Check for **existing notes** on the task - these contain handoff information from the previous agent
+3. Check **git status** and **git diff** for uncommitted changes from the previous agent
+4. Check **git log** for recent commits related to this task
+5. Assess the current state before continuing:
+   - What was completed?
+   - What remains?
+   - Are there uncommitted changes to salvage or discard?
+6. Continue from the current state, do not redo completed work
+
+## During Implementation
+
+### Commit Incrementally
+
+Do not wait until the task is complete to commit. Commit when you have:
+- Completed a logical unit of work (e.g., a working function, a passing test)
+- Made meaningful progress that would be costly to redo
+- Been working for several turns without committing
+
+Use descriptive commit messages that reference the task:
+```
+<task-id>: Implement video upload endpoint
+
+- Add POST /videos route
+- Add Pydantic schemas for request/response
+- Add basic validation
+```
+
+### Monitor Your Context
+
+Be aware that you have limited context. Signs that context is filling up:
+- You have read many files (more than 8-10)
+- You have made many tool calls
+- The task is larger than expected
+- You are on your 15th+ turn
+
+When context is getting full, prepare for graceful exit (see below).
+
+## Completing a Task
+
+Only close a task when it is **fully complete**:
+- All implementation is done
+- Code compiles/runs without errors
+- Tests pass (if applicable)
+- Changes are committed
+
+To close:
+```bash
+bd close <task-id>
+```
+
+## Graceful Exit (Context Getting Full)
+
+If you cannot complete the task due to context constraints:
+
+1. **Add a handoff note** to the task describing:
+   - What you completed
+   - What remains to be done
+   - Any decisions made or gotchas discovered
+   - Which files were modified
+
+   ```bash
+   bd update <task-id> --description="$(cat <<'EOF'
+   [Original description here]
+
+   ---
+   ## Handoff Note (Agent 1)
+
+   **Completed:**
+   - Implemented X
+   - Added tests for Y
+
+   **Remaining:**
+   - Need to implement Z
+   - Tests for Z not yet written
+
+   **Files modified:**
+   - backend/app/api/routes/videos.py
+   - backend/app/schemas/video.py
+
+   **Notes:**
+   - Chose approach A over B because...
+   EOF
+   )"
+   ```
+
+2. **Commit all changes** with a descriptive message noting partial progress:
+   ```
+   <task-id>: Partial progress - implemented X and Y
+
+   Remaining: Z
+   Context limit reached, handing off to next agent.
+   ```
+
+3. **Leave the task open** (do not close it)
+
+4. **Exit** - the coordinator will assign a fresh agent to continue
+
+## What NOT To Do
+
+- Do not close a task that is incomplete
+- Do not continue working if you notice context errors or truncation
+- Do not redo work that a previous agent already completed and committed
+- Do not ignore handoff notes from previous agents
+- Do not make commits without meaningful changes
+- Do not work on tasks other than your assigned task
+
+## Task Scope Expectations
+
+Tasks are intentionally scoped to be completable within context limits. A well-scoped task typically:
+- Modifies 1-3 files
+- Requires reading 5-8 files for context
+- Has one clear deliverable
+- Can be verified in isolation
+
+If a task seems larger than this, it may be mis-scoped. Add a note and consult with the coordinator rather than attempting an oversized task.
