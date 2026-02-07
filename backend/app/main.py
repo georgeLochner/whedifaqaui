@@ -2,10 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import health
-from app.core.config import settings
 
 app = FastAPI(
-    title=settings.app_name,
+    title="Whedifaqaui",
     description="Video Knowledge Management System",
     version="0.1.0",
 )
@@ -27,7 +26,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 def root():
     """Root endpoint with basic info."""
     return {
-        "app": settings.app_name,
+        "app": "Whedifaqaui",
         "version": "0.1.0",
         "docs": "/docs",
     }

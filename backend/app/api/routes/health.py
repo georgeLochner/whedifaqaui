@@ -39,7 +39,7 @@ def health_check(db: Session = Depends(get_db)):
     # Check Redis
     try:
         import redis
-        r = redis.from_url(settings.redis_url)
+        r = redis.from_url(settings.REDIS_URL)
         r.ping()
         status["services"]["redis"] = "connected"
     except Exception as e:
