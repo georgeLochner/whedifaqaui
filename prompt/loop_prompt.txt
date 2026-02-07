@@ -35,7 +35,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 **New agent, first task of feature:**
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task." \
+  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus
 ```
@@ -43,7 +43,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 **New agent, continuing partial feature (some tasks already closed):**
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task." \
+  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus
 ```
@@ -51,7 +51,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 **Resumed session (same feature, previous task succeeded, free_space > 50%):**
 ```bash
 ./run_claude_agent.sh \
-  --prompt "Complete task <task-id> in feature <feature-id>." \
+  --prompt "Complete task <task-id> in feature <feature-id>. Exit after completion." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus \
   --resume <session_id>
@@ -111,7 +111,7 @@ bd show <task-id>
 
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{blocking_task_id}_{unix_timestamp} \
   --model opus \
   --extended-thinking 10000
@@ -135,7 +135,7 @@ git log --oneline -5        # Check for partial commits
 Assign fresh agent (no extended thinking - context was the issue, not difficulty):
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus
 ```
@@ -145,7 +145,7 @@ Assign fresh agent (no extended thinking - context was the issue, not difficulty
 The agent failed for a non-context reason. Use extended thinking to help debug:
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus \
   --extended-thinking 10000

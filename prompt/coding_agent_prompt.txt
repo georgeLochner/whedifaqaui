@@ -31,6 +31,8 @@ Handoff: Completed X. Remaining: Y. Modified: file1, file2."
 3. Leave task open and exit
 
 ## Rules
+- Only work on your assigned task - do not start additional tasks
+- Exit after completing (or handing off) your assigned task
 - Never close incomplete tasks
 - Never redo work previous agents committed
 - Tasks should modify 1-3 files, read 5-8 max
