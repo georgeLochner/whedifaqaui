@@ -257,8 +257,7 @@ This enables:
 
 **Key practices:**
 - Use patch versions: `postgres:16.1-alpine` NOT `postgres:16-alpine` or `:latest`
-- Document all versions in `technology-stack.md` with freeze warning
-- Add to agent rules: "Never change Docker image versions"
+- Document all versions in `technology-stack.md` in the `Docker Images` section, this enforced as invariant in the coding agent instructions
 
 **Example:**
 ```markdown

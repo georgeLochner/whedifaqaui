@@ -112,5 +112,5 @@ If you cannot finish (read 10+ files, 15+ turns, task larger than expected):
 - Never close incomplete tasks
 - Never close tasks with failing tests
 - Never redo work previous agents committed
-- Never change Docker image versions (see "Docker Images" section in docs/design/technology-stack.md)
+- Never change Docker image versions (specified in "Docker Image Versions" section in docs/design/technology-stack.md)
 - Tasks should modify 1-3 files, read 5-8 max

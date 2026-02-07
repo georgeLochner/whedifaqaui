@@ -56,7 +56,7 @@ This document details all technologies, libraries, and frameworks used in Whedif
 
 ---
 
-## Docker Images (All Phases)
+## Docker Image Versions
 
 **⚠️ THESE VERSIONS ARE FROZEN - Do not change without explicit task**
 
