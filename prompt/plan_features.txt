@@ -141,19 +141,25 @@ Features should be ordered so foundational work comes first. Common patterns:
 2. Data models → Services → APIs → UI
 3. Upload → Processing → Search → Display
 
-For each feature after the first, make its "Plan tasks" task blocked by the previous feature:
+For each feature after the first, set up TWO dependencies:
 
 ```bash
 # If Feature B depends on Feature A:
+
+# 1. Feature B depends on Feature A (keeps bd ready clean)
+bd dep add beads-feature-B beads-feature-A
+
+# 2. "Plan tasks for B" depends on Feature A (gates task planning)
 bd dep add beads-plan-tasks-B beads-feature-A
 ```
 
 This ensures:
 - Feature A's tasks complete
 - Feature A is closed
-- Then "Plan tasks for B" becomes ready
+- Both Feature B and "Plan tasks for B" become ready
 - Feature B's tasks are planned
 - Feature B's tasks execute
+- `bd ready` only shows features that are actually ready to work on
 
 ## Example Output
 
@@ -180,9 +186,12 @@ bd create --title="Plan tasks for Video Upload API" --type=task --parent=beads-f
 bd create --title="Plan tasks for Upload UI" --type=task --parent=beads-feat-003 --description="..."
 # Returns: beads-task-003
 
-# Set up dependencies
-bd dep add beads-task-002 beads-feat-001  # Plan API waits for Models feature
-bd dep add beads-task-003 beads-feat-002  # Plan UI waits for API feature
+# Set up dependencies (both feature and plan task dependencies)
+bd dep add beads-feat-002 beads-feat-001  # API feature depends on Models feature
+bd dep add beads-task-002 beads-feat-001  # Plan API tasks waits for Models feature
+
+bd dep add beads-feat-003 beads-feat-002  # UI feature depends on API feature
+bd dep add beads-task-003 beads-feat-002  # Plan UI tasks waits for API feature
 ```
 
 ## Checklist Before Closing
