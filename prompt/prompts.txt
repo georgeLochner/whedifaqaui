@@ -22,5 +22,21 @@ Our goal is to implement phase 0 to 3. However the final and most critical step 
   phase is succesfully implemented. Phase 0 is a bit different since it involves environment setup. Analyse @docs/implementation/phase0.md and determine whether the verification steps are adequate to confirm that the environment is         
   ready, or suggest additional tests and verifications  
   --------------------------------------
-Our goal is to implement phase 1 to 3. However the final and most critical step before implementation can start is that we need to analyse each phase individually and define the testing criteria that we will use to determine that the     
-  phase is succesfully implemented. Critically we need to define end to end test and create test resources such that we can test the system with known inputs and expected outputs. A key aspect of verificaiton in general is also that agents should use playwright mcp to capture screenshots. Playwright is not currently enabled in this project but it will be available when implementation commences. As such we need to plan how verification should be accomplished, including required screenshots. Let us analyse phase 1 including user stories and then define the required tests which should include a combination of functional test as well as end to end tests.
+Our goal is to implement phase 1 to 3. However the final and most critical step before implementation can start is that we need to analyse each phase individually and define the testing criteria that we will use to determine that the phase is succesfully implemented. Critically we need to define end to end test and create test resources such that we can test the system with known inputs and expected outputs. A key aspect of verificaiton in general is also that agents should use playwright mcp to capture screenshots. Playwright is not currently enabled in this project but it will be available when implementation commences. As such we need to plan how verification should be accomplished, including required screenshots. Let us analyse phase 2 including user stories and then define the required tests which should include a combination of functional test as well as end to end tests.
+
+----------------------------
+We want to implement the code for this project. We will do this by creating a set of beads features and tasks. 
+We have the defined high level implementation plans by phase in docs/implementation. We have also defined the testing strategy for each phase in docs/testing.
+Our job is to create a prompt which an agent will use to create the features and tasks required to implement the first phase of the project.
+We must instruct the agent to think like a tech lead and archtiect. Each phase must be broken up into beads features which are self contained. We will Create
+a dependency chain between beads features such that each feature is completed sequentially until all features for the phase are complete.
+Each beads feature will have a set of beads tasks which are children of the feature. We will add dependencies bewteen tasks such that they form a sequence. 
+The feature description must contain all the technical context required
+by the agent to complete the feature. When we start a coding agent, we will specify the feature and the task that the agent must complete. The agent will
+then have to seed its context from the feature description and the task description to complete the task. Once a task is complete, we will assign the next
+task required for the feature to the same agent. This is the critical aspect of how we manage the agent context. Since the agent already has context from the previous task, it will be able to proceed
+with the next task without having to reload its entire context. As the agent continues to complete tasks within a feature, its context will gradually
+fill up. When its context exceeds a threshold, we will stop assigning tasks to that agent and instead create a new agent with a clean context. 
+When the new agent starts, it will be instructed to initialize its context by reading the feature description and also looking at the descriptions of the tasks
+already completed for the feature. Then it will have sufficient context to proceed with its assigned task. It can then continue to do additional tasks
+for that feature without further context initialization, until its context exceeds the threshold. Do you have any questions or require any clarification.

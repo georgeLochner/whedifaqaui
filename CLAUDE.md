@@ -7,8 +7,6 @@
 - Enables natural language search via web UI
 - All Claude interactions go through a backend wrapper module
 
-**Named after**: A fictional African bird that jumps above grass to locate its nest - metaphor for finding information in vast video archives.
-
 **Use Case**: Technical project handover - finding specific information across hours of recorded meetings.
 
 # Documentation
@@ -51,3 +49,4 @@ Test specifications for verifying delivery of each phase. Each phase has a corre
 
 ## docs/reference
 Extended specifications referenced from design docs. Keeps design documents focused and readable.
+

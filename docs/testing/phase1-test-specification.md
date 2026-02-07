@@ -121,6 +121,22 @@ The YouTube transcript (VTT/SRT format) is converted to our expected JSON format
 
 ### 2.2 Additional Test Resources
 
+#### Resource: `test_meeting_long.mkv`
+- **Duration**: ~13 minutes (803 seconds)
+- **Content**: Backdrop CMS weekly meeting (January 5, 2023)
+- **Speakers**: 7 identified speakers (Jen Lampton, Martin, Robert, Greg, Luke McCormick, Tim Erickson, Unknown)
+- **Purpose**: Multi-speaker diarization testing, longer transcription stress test
+- **Location**: `/data/test/videos/test_meeting_long.mkv`
+- **Ground Truth**: `/data/test/expected/test_meeting_long_ground_truth.json`
+- **Key Topics**: PHP8 support, permissions filter, contrib modules, views field handlers, administration bar
+- **Key Terms**: `backdrop`, `PHP8`, `permissions`, `contrib`, `views`, `htaccess`, `core`, `modules`, `search index`, `roles`
+
+**Use Cases**:
+- Verify speaker diarization accuracy with 7+ distinct speakers
+- Test transcription quality on longer recordings
+- Verify chunking behavior with extended content
+- Test search across longer transcripts
+
 #### Resource: `test_silent.mkv`
 - **Duration**: 10 seconds
 - **Content**: Video with silent audio track
@@ -944,7 +960,45 @@ assert verification['overall_pass'] == True, f"Transcript quality failed: {verif
 
 ---
 
-### E2E-06: LLM Transcript Verification
+### E2E-06: Multi-Speaker Diarization Test
+
+**Purpose**: Verify speaker diarization accuracy with 7+ speakers using the longer test video
+
+**Preconditions**: System running, test data prepared
+
+**Test Video**: `test_meeting_long.mkv` (Backdrop CMS meeting with 7+ speakers)
+
+**Steps**:
+1. Navigate to Upload page
+2. Upload `test_meeting_long.mkv`
+3. Enter metadata:
+   - Title: "Backdrop CMS Weekly Meeting"
+   - Date: 2023-01-05
+   - Participants: "Jen, Martin, Robert, Greg, Luke, Tim"
+   - Notes: "Multi-speaker diarization test"
+4. Submit and wait for processing (may take longer due to duration)
+5. Verify status = ready
+6. Run LLM verification against ground truth (`test_meeting_long_ground_truth.json`)
+7. Navigate to video player
+8. Verify transcript shows multiple speaker labels
+9. Verify speaker transitions occur at reasonable boundaries
+10. Search for "permissions filter" - verify results from this video
+
+**Expected Results**:
+- Processing completes successfully for 13+ minute video
+- Speaker diarization identifies multiple distinct speakers
+- Speaker transitions align with natural conversation breaks
+- Ground truth verification passes (content accuracy ≥80%)
+- Search returns relevant segments
+
+**Playwright Screenshots**:
+- `e2e06-01-long-video-processing.png` - Processing status for long video
+- `e2e06-02-multi-speaker-transcript.png` - Transcript showing multiple speakers
+- `e2e06-03-speaker-transitions.png` - Detail of speaker change
+
+---
+
+### E2E-07: LLM Transcript Verification
 
 **Purpose**: Dedicated test to verify transcription quality using LLM agent comparison
 
@@ -1367,9 +1421,10 @@ def opensearch_test_index():
 - [ ] E2E-03: Library filtering passing
 - [ ] E2E-04: Search no results handling passing
 - [ ] E2E-05: Error handling passing
-- [ ] E2E-06: LLM transcript verification passing (all 5 criteria)
+- [ ] E2E-06: Multi-speaker diarization test passing (test_meeting_long.mkv)
+- [ ] E2E-07: LLM transcript verification passing (all 5 criteria)
 
-**Total E2E tests**: 6 scenarios
+**Total E2E tests**: 7 scenarios
 
 #### LLM Verification Tests (V2-E*)
 - [ ] V2-E01: Content accuracy ≥85%
@@ -1385,15 +1440,16 @@ def opensearch_test_index():
 - [ ] All SCR-L* screenshots captured and verified
 - [ ] All SCR-P* screenshots captured and verified
 - [ ] All SCR-S* screenshots captured and verified
+- [ ] E2E-06 multi-speaker screenshots captured
 
-**Total screenshots**: ~17 screenshots
+**Total screenshots**: ~20 screenshots
 
 ### Acceptance Verification Matrix
 
 | Story | Unit Tests | Integration Tests | E2E Coverage | LLM Verification | Screenshots |
 |-------|------------|-------------------|--------------|------------------|-------------|
 | V1 | V1-U01-04, V1-F01-04 | V1-I01-04 | E2E-01 | - | SCR-U01-04 |
-| V2 | V2-U01-04 | V2-I01-05 | E2E-01, E2E-06 | V2-E01 to V2-E05 | - |
+| V2 | V2-U01-04 | V2-I01-05 | E2E-01, E2E-06, E2E-07 | V2-E01 to V2-E05 | - |
 | V3 | V3-U01-02, V3-F01-03 | V3-I01-03 | E2E-01, E2E-03, E2E-05 | - | SCR-L03-05 |
 | C1 | C1-U01-04 | C1-I01-03 | E2E-01 | - | - |
 | P1 | P1-U01-02, P1-F01-03 | P1-I01-03 | E2E-02 | - | SCR-P01-02 |
@@ -1455,10 +1511,12 @@ whedifaqaui/
 │   └── test/
 │       ├── videos/
 │       │   ├── test_meeting_primary.mkv    # YouTube-sourced test video
+│       │   ├── test_meeting_long.mkv       # Multi-speaker meeting (~13 min, 7+ speakers)
 │       │   ├── test_silent.mkv             # FFmpeg-generated silent video
 │       │   └── test_corrupted.mkv          # Truncated file for error testing
 │       └── expected/
-│           └── test_meeting_primary_ground_truth.json  # YouTube transcript
+│           ├── test_meeting_primary_ground_truth.json  # YouTube transcript
+│           └── test_meeting_long_ground_truth.json     # Multi-speaker meeting transcript (JSON)
 │
 └── scripts/
     ├── prepare-test-data.sh              # Downloads YouTube video + transcript

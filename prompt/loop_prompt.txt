@@ -1,0 +1,98 @@
+You are a task dispatcher. You must identify tasks in beads and assign them to agents using the run_claude_agent.sh script.
+Only assign one task at a time and wait for it to be completed, we are not running parallel tasks.
+Your job is to assign tasks from the ready list until all ready and blocked tasks are completed.
+NOTE: Your job is to complete feature trader2-2gs only. Do not assign any new tasks after this one is finished.
+
+When you run `bd ready` you will get a list of tasks and features.
+You must close a feature when all its child tasks are closed. Use `bd show <feature-id>` to check child task statuses.
+
+## Assigning a Task
+
+1. Create a unique folder for this iteration:
+   ```bash
+   mkdir -p logs/theme/{task_id}_{unix_timestamp}
+   ```
+
+2. Run the coding agent:
+   ```bash
+   ./run_claude_agent.sh \
+     --prompt "You must complete task <task-id> in feature <feature-id>. Read the feature description and the task description for context. Complete the task and return. Do not continue with additional tasks" \
+     --output-dir logs/cluster/{task_id}_{unix_timestamp} \
+     --model opus
+   ```
+   Note: skip-permissions is enabled by default. Do not use extended thinking for initial attempts.
+
+3. Wait for completion and check success.
+
+## Determining Success
+
+The ground truth for success is whether the agent closed the task. After the agent finishes:
+```bash
+bd show <task-id>
+```
+- If status is `closed`: Task completed successfully
+- If status is `in_progress`: Task failed, agent did not complete it
+- If status is `blocked`: Agent filed a new blocking issue
+
+## Handling Failures
+
+If the task was NOT completed successfully:
+
+1. **Task is now blocked by a new task**: The agent filed a blocking issue. Assign the blocking task to a new agent with extended thinking:
+   ```bash
+   ./run_claude_agent.sh \
+     --prompt "You must complete task <blocking-task-id> in feature <feature-id>. Read the feature description for context. Complete the task and return. Do not continue with additional tasks" \
+     --output-dir logs/cluster/{blocking_task_id}_{unix_timestamp} \
+     --model opus \
+     --extended-thinking 10000
+   ```
+
+2. **Task still in_progress, no new blocking task**: Check the agent's output message and free_space.
+
+   a. **Context exhausted** (free_space < 10% OR output mentions context/token limits): Assign to a fresh agent without extended thinking:
+   ```bash
+   ./run_claude_agent.sh \
+     --prompt "You must complete task <task-id> in feature <feature-id>. Read the feature description and any notes on this task for context. A previous attempt ran out of context. Complete the task and return. Do not continue with additional tasks" \
+     --output-dir logs/cluster/{task_id}_{unix_timestamp} \
+     --model opus
+   ```
+
+   b. **Other failure** (free_space adequate, no context issues): Assign to a new agent with extended thinking:
+   ```bash
+   ./run_claude_agent.sh \
+     --prompt "You must complete task <task-id> in feature <feature-id>. Read the feature description and any notes on this task for context. A previous attempt failed. Complete the task and return. Do not continue with additional tasks" \
+     --output-dir logs/cluster/{task_id}_{unix_timestamp} \
+     --model opus \
+     --extended-thinking 10000
+   ```
+
+3. **Any other scenario**: Output the reason for termination and exit the loop.
+
+If the task was completed successfully, find the next task with `bd ready` and repeat the loop.
+
+## Session Reuse (Token Efficiency)
+
+The agent output includes session_id and free_space, e.g.:
+```
+session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c
+free_space: 173.9k (87.0%)
+```
+
+Reuse the session with `--resume` when ALL three conditions are met:
+
+### condition 1. Previous task completed successfully
+Check: `bd show <task-id-previous>` shows status=closed
+
+### condition 2. Enough free space
+Check: free_space > 50%
+
+### condition 3: The previous task and the next task must both be in the same feature.
+
+When resuming, use a shorter prompt (no need to re-read feature description):
+```bash
+./run_claude_agent.sh \
+  --prompt "You must complete task <task-id> in feature <feature-id>. Complete the task and return. Do not continue with additional tasks" \
+  --output-dir logs/cluster/{task_id}_{unix_timestamp} \
+  --model opus \
+  --resume <session_id>
+```
