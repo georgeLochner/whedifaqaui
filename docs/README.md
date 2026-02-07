@@ -251,6 +251,40 @@ This enables:
    - Debugging strategies
    - Quick reference
 
+### Version Pinning for Docker Dependencies
+
+**Critical for autonomous development:** Pin exact versions of all Docker images to prevent agents from triggering large image downloads mid-development.
+
+**Best Practices:**
+- **Use patch-level versions**: `postgres:16.1-alpine` NOT `postgres:16-alpine`
+- **Avoid floating tags**: Never use `:latest`, `:stable`, or minor version ranges
+- **Document in technology stack**: Create a dedicated section listing all Docker images
+- **Freeze during active development**: Updates require dedicated tasks with testing
+- **Add to agent rules**: Explicitly prohibit version changes in agent prompts
+
+**Why this matters:**
+- Large images (OpenSearch = 826MB, PostgreSQL = 200MB+) cause significant delays
+- Minor version changes can introduce breaking changes mid-sprint
+- Reproducibility requires exact versions across all environments
+- Agents may "helpfully" update versions without understanding impact
+
+**Example version freeze policy:**
+```markdown
+## Docker Images (All Phases)
+
+⚠️ THESE VERSIONS ARE FROZEN - Do not change without explicit task
+
+| Service | Version | Docker Image |
+|---------|---------|--------------|
+| PostgreSQL | 16.1 | postgres:16.1-alpine |
+| OpenSearch | 2.11.1 | opensearchproject/opensearch:2.11.1 |
+| Redis | 7.2.4 | redis:7.2.4-alpine |
+```
+
+See [technology-stack.md](design/technology-stack.md) for implementation example.
+
+---
+
 **This pattern is project-agnostic and can be adapted to any language/framework by customizing docker-compose files and test commands.**
 
 ---
