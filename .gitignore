@@ -20,8 +20,10 @@ dist/
 build/
 *.egg-info/
 
-# Data directories (created at runtime)
-data/
+# Data directories (created at runtime, track structure via .gitkeep)
+data/**
+!data/**/
+!data/**/.gitkeep
 
 # Logs
 *.log
