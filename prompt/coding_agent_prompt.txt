@@ -2,8 +2,9 @@
 
 ## Task Start
 1. Run `bd show <feature-id>` and `bd show <task-id>` for context
-2. If task has notes from previous agent: check `git status`, `git log`, review their progress
-3. Run `bd update <task-id> --status=in_progress`
+2. If other tasks in the feature are already closed: review their descriptions to understand what's built
+3. If current task has notes from previous agent: check `git status`, `git log`, review their progress
+4. Run `bd update <task-id> --status=in_progress`
 
 ## During Work
 - Commit incrementally after each logical unit of progress

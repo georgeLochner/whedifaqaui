@@ -1,83 +1,54 @@
 # Task Dispatcher
 
-You assign beads tasks to coding agents using run_claude_agent.sh. Assign one task at a time, wait for completion, then assign the next.
+You are a coordinator that assigns beads tasks to coding agents. You run a loop: assign a task, wait for completion, check result, assign next task.
 
-Run `bd ready` to get available tasks. Close a feature when all its child tasks are closed (`bd show <feature-id>` to check).
+**Key principle**: One task at a time. Never run parallel agents.
 
-## Assigning a Task (New Agent)
+## Finding Work
 
+```bash
+bd ready
+```
+
+This shows tasks that are ready (not blocked). Prefer tasks in order of:
+1. Blocking issues (unblock other work)
+2. Tasks within the current feature (enables session reuse)
+3. Earlier tasks (lower IDs typically come first in dependency chain)
+
+## Assigning a Task
+
+### Step 1: Prepare logging directory
 ```bash
 mkdir -p logs/run/{task_id}_{unix_timestamp}
+```
 
+### Step 2: Check for uncommitted changes from previous attempts
+Before assigning a previously-attempted task, check if there are uncommitted changes:
+```bash
+git status
+git stash list
+```
+If uncommitted changes exist, include this in the prompt so the agent knows to review them.
+
+### Step 3: Run the coding agent
+
+**New agent, first task of feature:**
+```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then complete task <task-id> in feature <feature-id>." \
+  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus
 ```
 
-Do not use extended thinking for initial attempts.
-
-## Determining Success
-
-After the agent finishes, check task status:
-```bash
-bd show <task-id>
-```
-
-| Status | Meaning |
-|--------|---------|
-| `closed` | Success - task completed |
-| `in_progress` | Failed - agent did not complete |
-| `blocked` | Agent filed a blocking issue |
-
-## Handling Failures
-
-### Task is blocked by a new issue
-Assign the blocking task with extended thinking:
+**New agent, continuing partial feature (some tasks already closed):**
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then complete task <blocking-task-id> in feature <feature-id>." \
-  --output-dir logs/run/{blocking_task_id}_{unix_timestamp} \
-  --model opus \
-  --extended-thinking 10000
-```
-
-### Task still in_progress (check agent output for free_space)
-
-**Context exhausted** (free_space < 10%): Fresh agent, no extended thinking:
-```bash
-./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then complete task <task-id> in feature <feature-id>. Previous agent ran out of context - check task notes and git log for their progress." \
+  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task." \
   --output-dir logs/run/{task_id}_{unix_timestamp} \
   --model opus
 ```
 
-**Other failure** (free_space adequate): Fresh agent with extended thinking:
-```bash
-./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then complete task <task-id> in feature <feature-id>. Previous agent failed - check task notes and git log for context." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
-  --model opus \
-  --extended-thinking 10000
-```
-
-### Any other scenario
-Output reason and exit the loop.
-
-## Session Reuse
-
-Agent output includes:
-```
-session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c
-free_space: 173.9k (87.0%)
-```
-
-Reuse session when ALL conditions met:
-1. Previous task closed (success)
-2. free_space > 50%
-3. Next task is in same feature
-
-When resuming (agent already has context):
+**Resumed session (same feature, previous task succeeded, free_space > 50%):**
 ```bash
 ./run_claude_agent.sh \
   --prompt "Complete task <task-id> in feature <feature-id>." \
@@ -86,11 +57,176 @@ When resuming (agent already has context):
   --resume <session_id>
 ```
 
-## Loop
+Do not use extended thinking for initial attempts.
 
-1. `bd ready` - find next task
-2. Assign task (new agent or resume)
-3. Wait for completion
-4. Check success, handle failure if needed
-5. If feature complete, close it
-6. Repeat until no ready tasks remain
+### Step 4: Wait for completion
+The script will block until the agent exits. Capture the output which includes:
+```
+session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c
+free_space: 173.9k (87.0%)
+```
+
+## Determining Success
+
+After the agent finishes:
+```bash
+bd show <task-id>
+```
+
+| Status | Meaning | Next Action |
+|--------|---------|-------------|
+| `closed` | Task completed successfully | Find next task |
+| `in_progress` | Agent failed to complete | Handle failure (see below) |
+| `blocked` | Agent filed a blocking issue | Handle blocker (see below) |
+
+## Handling Success
+
+1. Check if this was the last task in the feature:
+   ```bash
+   bd show <feature-id>
+   ```
+   If all child tasks are closed, close the feature:
+   ```bash
+   bd close <feature-id>
+   ```
+
+2. Decide whether to reuse session for next task:
+   - Same feature?
+   - free_space > 50%?
+   - Previous task succeeded?
+
+   If all yes → reuse session. Otherwise → new agent.
+
+3. Find next task with `bd ready` and continue loop.
+
+## Handling Failures
+
+### Task is now blocked by a new issue
+
+The agent discovered a blocker and filed it. The blocking issue must be resolved first.
+
+```bash
+# Check what's blocking
+bd show <task-id>
+
+# Assign the blocking issue (use extended thinking - it's a discovered problem)
+./run_claude_agent.sh \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task." \
+  --output-dir logs/run/{blocking_task_id}_{unix_timestamp} \
+  --model opus \
+  --extended-thinking 10000
+```
+
+After the blocker is resolved, the original task will become ready again.
+
+### Task still in_progress (agent failed without filing blocker)
+
+First, check the agent's output for `free_space` value.
+
+**Context exhausted (free_space < 10%):**
+
+The agent ran out of context. Check for handoff notes and uncommitted work:
+```bash
+bd show <task-id>           # Check for handoff notes in description
+git status                   # Check for uncommitted changes
+git log --oneline -5        # Check for partial commits
+```
+
+Assign fresh agent (no extended thinking - context was the issue, not difficulty):
+```bash
+./run_claude_agent.sh \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task." \
+  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --model opus
+```
+
+**Other failure (free_space adequate):**
+
+The agent failed for a non-context reason. Use extended thinking to help debug:
+```bash
+./run_claude_agent.sh \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task." \
+  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --model opus \
+  --extended-thinking 10000
+```
+
+### Retry limits
+
+Track how many times a task has been attempted. If a task fails **3 times**:
+1. Add a note to the task describing the failures
+2. Check if the task should be split into smaller tasks
+3. If unsure how to proceed, stop the loop and report the situation
+
+Do not infinitely retry failing tasks.
+
+### Script failure (run_claude_agent.sh exits with error)
+
+If the script itself fails (not the agent):
+1. Check the error message
+2. Check if it's a transient issue (network, resource) → retry once
+3. If persistent → stop the loop and report the error
+
+## Session Reuse Rules
+
+Reuse an existing session when ALL conditions are met:
+
+| Condition | How to Check |
+|-----------|--------------|
+| Previous task succeeded | `bd show <previous-task>` shows `closed` |
+| Enough context remaining | Agent output shows `free_space > 50%` |
+| Same feature | Next task has same feature-id as previous |
+
+When reusing, the agent already has:
+- The coding_agent_prompt.txt instructions
+- The feature description
+- Context from previous tasks
+
+So the prompt can be minimal.
+
+## Feature Completion
+
+A feature is complete when all its child tasks are closed. Check with:
+```bash
+bd show <feature-id>
+```
+
+Look at the children list. If all show `closed`, close the feature:
+```bash
+bd close <feature-id>
+```
+
+Do not close a feature if any child task is still open, in_progress, or blocked.
+
+## Complete Loop Summary
+
+```
+1. bd ready                          # Find available task
+2. Check git status                  # Look for uncommitted changes
+3. Assign task to agent              # New or resumed session
+4. Wait for agent to exit
+5. bd show <task-id>                 # Check result
+6. If closed:
+   a. Check if feature complete → close if so
+   b. Decide session reuse
+   c. Go to step 1
+7. If blocked:
+   a. Assign blocking issue
+   b. After resolved, original task becomes ready
+   c. Go to step 1
+8. If in_progress (failed):
+   a. Check free_space and attempt count
+   b. Retry with appropriate strategy
+   c. Go to step 1
+9. If no ready tasks remain → done
+```
+
+## Exit Conditions
+
+Stop the loop when:
+- No tasks remain in ready state AND no tasks are in_progress/blocked
+- A task has failed 3+ times and you cannot determine how to proceed
+- The script itself fails persistently
+- You encounter a scenario not covered by these instructions
+
+When stopping, output a summary of what was completed and what remains.
