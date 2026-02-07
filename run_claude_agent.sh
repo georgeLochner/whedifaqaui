@@ -14,6 +14,7 @@ IDLE_TIMEOUT=60
 MAX_RUNTIME=3600
 SKIP_PERMISSIONS=true
 MONITOR_INTERVAL=5
+CENTRAL_LOG=""  # Optional central log file for all agent runs
 
 # Usage function
 usage() {
@@ -31,6 +32,7 @@ Optional:
     --idle-timeout N       Seconds of idle time before termination [default: 60]
     --max-runtime N        Maximum runtime in seconds [default: 3600]
     --monitor-interval N   Seconds between activity checks [default: 5]
+    --central-log FILE     Append parsed activity to central log file (optional)
     --skip-permissions     Add --dangerously-skip-permissions flag [default: true]
     --no-skip-permissions  Require permission prompts (disable skip-permissions)
     --help                 Show this help message
@@ -40,6 +42,7 @@ Output Files (created in --output-dir):
     verbose.jsonl          Detailed JSON activity log
     monitor.log            Activity monitoring log
     agent.pid              PID file (removed on completion)
+    logger.pid             Logger PID file (if --central-log used, removed on completion)
 
 Exit Codes:
     0 - Success
@@ -88,6 +91,10 @@ while [[ $# -gt 0 ]]; do
             MONITOR_INTERVAL="$2"
             shift 2
             ;;
+        --central-log)
+            CENTRAL_LOG="$2"
+            shift 2
+            ;;
         --skip-permissions)
             SKIP_PERMISSIONS=true
             shift
@@ -128,10 +135,22 @@ RESULT_FILE="$WORK_DIR/result.txt"
 VERBOSE_FILE="$WORK_DIR/verbose.jsonl"
 MONITOR_LOG="$WORK_DIR/monitor.log"
 AGENT_PID_FILE="$WORK_DIR/agent.pid"
+LOGGER_PID_FILE="$WORK_DIR/logger.pid"
 
-# Cleanup function (kills agent if interrupted, preserves all logs)
+# Cleanup function (kills agent and logger if interrupted, preserves all logs)
 cleanup() {
     local exit_code=$?
+
+    # Kill logger if still running
+    if [[ -f "$LOGGER_PID_FILE" ]]; then
+        local logger_pid=$(cat "$LOGGER_PID_FILE")
+        if kill -0 "$logger_pid" 2>/dev/null; then
+            kill "$logger_pid" 2>/dev/null || true
+            # Wait briefly for logger to finish writing
+            sleep 0.5
+        fi
+        rm -f "$LOGGER_PID_FILE"
+    fi
 
     # Kill agent if still running
     if [[ -f "$AGENT_PID_FILE" ]]; then
@@ -186,6 +205,31 @@ fi
 claude "${CLAUDE_ARGS[@]}" --verbose --output-format stream-json > "$VERBOSE_FILE" 2>&1 &
 AGENT_PID=$!
 echo "$AGENT_PID" > "$AGENT_PID_FILE"
+
+# Start background logger if central log requested
+if [[ -n "$CENTRAL_LOG" ]]; then
+    # Ensure central log directory exists
+    CENTRAL_LOG_DIR=$(dirname "$CENTRAL_LOG")
+    mkdir -p "$CENTRAL_LOG_DIR"
+
+    # Generate run ID from output directory name
+    RUN_ID=$(basename "$OUTPUT_DIR")
+
+    # Find logger script (look in same directory as this script)
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    LOGGER_SCRIPT="$SCRIPT_DIR/logger_background.sh"
+
+    if [[ -x "$LOGGER_SCRIPT" ]]; then
+        "$LOGGER_SCRIPT" "$VERBOSE_FILE" "$CENTRAL_LOG" "$RUN_ID" &
+        LOGGER_PID=$!
+        echo "$LOGGER_PID" > "$LOGGER_PID_FILE"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Background logger started (PID: $LOGGER_PID)" >> "$MONITOR_LOG"
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Central log: $CENTRAL_LOG" >> "$MONITOR_LOG"
+    else
+        echo "WARNING: Background logger not found at $LOGGER_SCRIPT" >&2
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - Background logger not found" >> "$MONITOR_LOG"
+    fi
+fi
 
 # Monitor agent activity
 START_TIME=$(date +%s)

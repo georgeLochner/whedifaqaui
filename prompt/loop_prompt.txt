@@ -19,7 +19,7 @@ This shows tasks that are ready (not blocked). Prefer tasks in order of:
 
 ### Step 1: Prepare logging directory
 ```bash
-mkdir -p logs/run/{task_id}_{unix_timestamp}
+mkdir -p logs/run/{unix_timestamp}_{task_id}
 ```
 
 ### Step 2: Check for uncommitted changes from previous attempts
@@ -36,7 +36,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --model opus
 ```
 
@@ -44,20 +44,22 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --model opus
 ```
 
-**Resumed session (same feature, previous task succeeded, free_space > 50%):**
+**Resumed session (same feature, previous task succeeded, free_space > 35%):**
 ```bash
 ./run_claude_agent.sh \
   --prompt "Complete task <task-id> in feature <feature-id>. Exit after completion." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --model opus \
   --resume <session_id>
 ```
 
 Do not use extended thinking for initial attempts.
+
+**Note**: The `run_claude_agent.sh` script automatically starts a monitor that logs agent activity to `logs/coder.log`. You can watch all coding agent activity with `tail -f logs/coder.log`.
 
 ### Step 4: Wait for completion
 The script will block until the agent exits. Capture the output which includes:
@@ -92,7 +94,7 @@ bd show <task-id>
 
 2. Decide whether to reuse session for next task:
    - Same feature?
-   - free_space > 50%?
+   - free_space > 35%?
    - Previous task succeeded?
 
    If all yes → reuse session. Otherwise → new agent.
@@ -112,7 +114,7 @@ bd show <task-id>
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{blocking_task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{blocking_task_id} \
   --model opus \
   --extended-thinking 10000
 ```
@@ -136,7 +138,7 @@ Assign fresh agent (no extended thinking - context was the issue, not difficulty
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --model opus
 ```
 
@@ -146,7 +148,7 @@ The agent failed for a non-context reason. Use extended thinking to help debug:
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{task_id}_{unix_timestamp} \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --model opus \
   --extended-thinking 10000
 ```
@@ -174,7 +176,7 @@ Reuse an existing session when ALL conditions are met:
 | Condition | How to Check |
 |-----------|--------------|
 | Previous task succeeded | `bd show <previous-task>` shows `closed` |
-| Enough context remaining | Agent output shows `free_space > 50%` |
+| Enough context remaining | Agent output shows `free_space > 35%` |
 | Same feature | Next task has same feature-id as previous |
 
 When reusing, the agent already has:
