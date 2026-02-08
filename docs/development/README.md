@@ -22,20 +22,28 @@ The development process bridges planning (requirements, design, implementation p
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                  DEVELOPMENT ENVIRONMENT SETUP                       │
+│               ENVIRONMENT SCAFFOLDING PHASE                          │
 │                                                                      │
-│  ┌────────────────────────────────────────────────────────────┐    │
-│  │  Docker Compose Development Mode                            │    │
-│  │                                                             │    │
-│  │  • Dependencies in containers (DB, cache, search, etc.)    │    │
-│  │  • Application code volume-mapped from host                │    │
-│  │  • Hot reload enabled (no rebuild on code change)          │    │
-│  └────────────────────────────────────────────────────────────┘    │
+│  Sets up the development environment so that implementation          │
+│  agents can start coding immediately without infrastructure work.    │
+│                                                                      │
+│  Deliverables:                                                       │
+│  • Docker Compose with all services running and healthy              │
+│  • Dockerfiles with development stages (volume mounts, hot reload)  │
+│  • Backend/frontend project skeletons (entry points, config, deps)  │
+│  • Database migrations tooling configured                            │
+│  • Test frameworks wired up and runnable                             │
+│  • Dependency manifests committed (requirements.txt, package.json)  │
+│                                                                      │
+│  Exit criteria: `docker compose up` starts all services,             │
+│  code edits reflect immediately, tests can execute in containers.    │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    AGENT EXECUTION LOOP                              │
+│              IMPLEMENTATION PHASES (1, 2, 3, ...)                    │
+│                                                                      │
+│  Each phase follows the agent execution loop:                        │
 │                                                                      │
 │  1. Agent reads implementation plan from docs/implementation/       │
 │  2. Agent modifies source code on host filesystem                   │
@@ -43,8 +51,13 @@ The development process bridges planning (requirements, design, implementation p
 │  4. Agent runs tests/verification inside containers                 │
 │  5. Agent commits changes when verification passes                  │
 │  6. Agent closes task and picks up next one                         │
+│                                                                      │
+│  Agents focus purely on application logic — no Docker setup,         │
+│  no infrastructure configuration, no build system changes.           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+**The scaffolding phase is critical.** If the development environment is not fully set up before implementation begins, coding agents will waste time on infrastructure work, make incorrect assumptions about the container setup, or use slow workflows (e.g., rebuilding images instead of using volume mounts). The scaffolding phase ensures that by the time an implementation agent starts, the only thing it needs to do is edit code, install packages, and run tests.
 
 ---
 
@@ -60,15 +73,18 @@ The development process bridges planning (requirements, design, implementation p
 
 **Task Hierarchy**:
 ```
-Phase → Features → Plan tasks → Implementation tasks → E2E verification
+Scaffolding Phase → Implementation Phases (1, 2, 3, ...)
+                        └→ Features → Plan tasks → Implementation tasks → E2E verification
 ```
 
 **Flow**:
-1. Bootstrap task creates features
-2. Coordinator assigns "Plan tasks" for each feature
-3. Planning agent breaks feature into implementation tasks
-4. Coordinator assigns implementation tasks sequentially
-5. Final regression testing gates phase completion
+1. Scaffolding phase sets up the development environment
+2. For each implementation phase:
+   a. Bootstrap task creates features
+   b. Coordinator assigns "Plan tasks" for each feature
+   c. Planning agent breaks feature into implementation tasks
+   d. Coordinator assigns implementation tasks sequentially
+   e. Final regression testing gates phase completion
 
 **Detail**: [orchestration.md](orchestration.md)
 
