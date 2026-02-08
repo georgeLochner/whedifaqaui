@@ -1,28 +1,114 @@
+import { useState, useEffect, useRef } from 'react'
+import UploadForm, { type UploadFormData } from '../components/upload/UploadForm'
+import UploadProgress from '../components/upload/UploadProgress'
+import StatusBadge from '../components/common/StatusBadge'
+import { uploadVideo, getVideoStatus } from '../api/videos'
+import type { Video } from '../types/video'
+
+const POLL_INTERVAL_MS = 5000
+
 function UploadPage() {
+  const [progress, setProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadedVideo, setUploadedVideo] = useState<Video | null>(null)
+  const [currentStatus, setCurrentStatus] = useState<Video['status'] | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
+
+  function startPolling(videoId: string) {
+    pollRef.current = setInterval(async () => {
+      try {
+        const statusResp = await getVideoStatus(videoId)
+        setCurrentStatus(statusResp.status)
+        if (statusResp.error_message) {
+          setErrorMessage(statusResp.error_message)
+        }
+        if (statusResp.status === 'ready' || statusResp.status === 'error') {
+          if (pollRef.current) clearInterval(pollRef.current)
+        }
+      } catch {
+        // Polling failure is non-fatal; we'll retry on next tick
+      }
+    }, POLL_INTERVAL_MS)
+  }
+
+  async function handleSubmit(data: UploadFormData) {
+    setIsUploading(true)
+    setProgress(0)
+    setUploadError(null)
+    setUploadedVideo(null)
+    setCurrentStatus(null)
+    setErrorMessage(null)
+
+    try {
+      const video = await uploadVideo(
+        data.file,
+        {
+          title: data.title,
+          recording_date: data.recording_date,
+          participants: data.participants,
+          context_notes: data.context_notes,
+        },
+        (pct) => setProgress(pct)
+      )
+      setUploadedVideo(video)
+      setCurrentStatus(video.status)
+      startPolling(video.id)
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Upload failed. Please try again.'
+      setUploadError(message)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="px-4 py-6 sm:px-0">
-      <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Upload Video</h1>
-        <p className="text-gray-600 mb-8">
-          Upload MKV recordings for transcription and indexing.
-        </p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Video</h1>
+      <p className="text-gray-600 mb-8">
+        Upload MKV recordings for transcription and indexing.
+      </p>
 
-        <div className="max-w-xl">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <p className="text-gray-500">
-              Drag and drop MKV file here, or click to browse
-            </p>
-            <p className="mt-4 text-sm text-gray-400">
-              Upload functionality will be implemented in Phase 1.
-            </p>
-          </div>
+      <UploadForm onSubmit={handleSubmit} disabled={isUploading} />
+
+      <UploadProgress progress={progress} isUploading={isUploading} />
+
+      {uploadError && (
+        <div className="mt-4 max-w-xl rounded-md bg-red-50 p-4">
+          <p className="text-sm text-red-700">{uploadError}</p>
         </div>
-      </div>
+      )}
+
+      {uploadedVideo && currentStatus && (
+        <div className="mt-6 max-w-xl rounded-md bg-white shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-gray-900">
+                {uploadedVideo.title}
+              </p>
+              <p className="text-sm text-gray-500">ID: {uploadedVideo.id}</p>
+            </div>
+            <StatusBadge status={currentStatus} />
+          </div>
+          {errorMessage && (
+            <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
+          )}
+          {currentStatus === 'ready' && (
+            <p data-testid="success-message" className="mt-2 text-sm text-green-600">
+              Processing complete! Your video is ready.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
