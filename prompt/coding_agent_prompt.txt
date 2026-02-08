@@ -33,13 +33,11 @@ Services: backend(:8000), frontend(:3000), postgres(:5432), opensearch(:9200), r
 # Backend: after editing requirements.txt
 docker compose exec backend pip install -r requirements.txt
 
-# Frontend: after editing package.json (requires development stage — see below)
+# Frontend: after editing package.json
 docker compose exec frontend npm install
 ```
 
 Only use `docker compose build` for Dockerfile changes (base image, system packages, build steps).
-
-**Note:** `docker compose exec frontend npm install` only works when the frontend container runs the `development` Dockerfile stage (node-based). If you get "npm: not found", the container is running the production stage (nginx). Fix: `docker compose build frontend && docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d frontend`.
 
 ---
 
