@@ -296,25 +296,13 @@ CMD ["celery", "-A", "app.celery_app", "worker", "--loglevel=info", "--concurren
 
 ```dockerfile
 # frontend/Dockerfile
-
-FROM node:20-alpine AS builder
-
+FROM node:20-alpine
 WORKDIR /app
-
 COPY package*.json ./
-RUN npm ci
-
+RUN npm install
 COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 EXPOSE 3000
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 ```
 
 ## Environment Variables
@@ -369,7 +357,36 @@ docker compose restart backend
 docker compose down
 ```
 
-**For detailed development workflow**, including when to use dev vs production mode, see [Development Documentation](../development/docker-workflow.md).
+#### docker-compose.dev.yml
+
+Development overrides add volume mounts (so code edits on the host reflect immediately in containers) and hot-reload commands:
+
+```yaml
+# docker-compose.dev.yml
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+      - video_data:/data/videos
+      - transcript_data:/data/transcripts
+      - model_cache:/root/.cache
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    volumes:
+      - ./backend:/app
+      - video_data:/data/videos
+      - transcript_data:/data/transcripts
+      - model_cache:/root/.cache
+
+  frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
+```
+
+**For detailed development workflow**, see [Development Documentation](../development/docker-workflow.md).
 
 ### Production
 
