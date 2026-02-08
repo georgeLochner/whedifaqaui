@@ -7,7 +7,7 @@ All commands run inside Docker containers via `docker compose exec <service> <co
 **Start services with this command:**
 
 ```bash
-# Always use development mode (code volume-mapped, hot reload enabled)
+# Start services (code volume-mapped, hot reload enabled)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # Verify running
