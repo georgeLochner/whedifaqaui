@@ -305,8 +305,12 @@ if [[ -f "$VERBOSE_FILE" ]]; then
         grep '^{' "$VERBOSE_FILE" | jq -r 'select(.type == "result") | .result // empty' 2>/dev/null > "$RESULT_FILE"
         # Extract is_error to check for failure (boolean: true/false)
         RESULT_IS_ERROR=$(grep '^{' "$VERBOSE_FILE" | jq -r 'select(.type == "result") | .is_error' 2>/dev/null)
-        # Extract session_id from init message
-        SESSION_ID=$(grep '^{' "$VERBOSE_FILE" | jq -r 'select(.type == "system") | .session_id // empty' 2>/dev/null | head -1)
+        # Use the --resume session ID if available, otherwise extract from init message
+        if [[ -n "$RESUME" ]]; then
+            SESSION_ID="$RESUME"
+        else
+            SESSION_ID=$(grep '^{' "$VERBOSE_FILE" | jq -r 'select(.type == "system" and .subtype == "init") | .session_id // empty' 2>/dev/null | head -1)
+        fi
     else
         # Fallback without jq: use python to parse JSON
         # Python writes result directly to file (avoids delimiter issues with
@@ -319,7 +323,7 @@ result = ''
 for line in open('$VERBOSE_FILE'):
     try:
         obj = json.loads(line)
-        if obj.get('type') == 'system' and not session_id:
+        if obj.get('type') == 'system' and obj.get('subtype') == 'init' and not session_id:
             session_id = obj.get('session_id', '')
         if obj.get('type') == 'result':
             result = obj.get('result', '')
@@ -333,7 +337,11 @@ print(is_error)
             echo "WARNING: Neither jq nor python3 available for JSON parsing" >&2
             echo "See $VERBOSE_FILE for raw output" > "$RESULT_FILE"
         }
-        SESSION_ID=$(echo "$PYTHON_OUTPUT" | sed -n '1p')
+        if [[ -n "$RESUME" ]]; then
+            SESSION_ID="$RESUME"
+        else
+            SESSION_ID=$(echo "$PYTHON_OUTPUT" | sed -n '1p')
+        fi
         RESULT_IS_ERROR=$(echo "$PYTHON_OUTPUT" | sed -n '2p')
     fi
 fi
