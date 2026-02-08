@@ -337,7 +337,43 @@ git commit -m "<task-id>: Partial - Add video upload endpoint (handoff)"
 
 ---
 
-### Scenario 4: No Tests Exist for Task
+### Scenario 4: Task Requires a New Dependency
+
+**Symptom**: Implementation needs a package not yet in requirements.txt or package.json
+
+**Protocol**:
+
+1. **Edit the manifest file on host**:
+   ```bash
+   # Add the package to requirements.txt or package.json
+   # Use Read/Edit tools as normal
+   ```
+
+2. **Install inside the running container** (do NOT rebuild):
+   ```bash
+   # Backend
+   docker compose exec backend pip install -r requirements.txt
+
+   # Frontend
+   docker compose exec frontend npm install
+   ```
+
+3. **Verify the package is available**:
+   ```bash
+   docker compose exec backend python -c "import new_package"
+   docker compose exec frontend node -e "require('new-package')"
+   ```
+
+4. **Commit the manifest file** along with your code changes
+
+**Never:**
+- ❌ Run `docker compose build` just to add a dependency
+- ❌ Install packages without updating the manifest file (lost on next build)
+- ❌ Run `npm install` or `pip install` on the host — always inside the container
+
+---
+
+### Scenario 5: No Tests Exist for Task
 
 **Symptom**: Implementation plan doesn't specify tests
 
@@ -445,6 +481,27 @@ bd update <task-id> --status=in_progress
 
 ---
 
+### ❌ Don't: Rebuild to Install Dependencies
+
+```bash
+# WRONG
+vim backend/requirements.txt        # Add new package
+docker compose build backend        # Slow full rebuild (~minutes)
+docker compose up -d backend        # Restart with new image
+```
+
+**Why?** Rebuilding the entire image to add one package wastes minutes when it can be done in seconds.
+
+**Instead:** Install inside the running container:
+```bash
+vim backend/requirements.txt                                    # Add new package
+docker compose exec backend pip install -r requirements.txt     # Fast (~seconds)
+```
+
+The Dockerfile will pick up the updated manifest on the next build (recovery, fresh setup, or production build).
+
+---
+
 ### ❌ Don't: Change Docker Image Versions
 
 ```yaml
@@ -473,16 +530,22 @@ postgres:
 ### Should I Rebuild the Docker Image?
 
 ```
-Are you in development mode (docker-compose.dev.yml)?
-  ├─ YES → ❌ No rebuild needed
-  │         (changes reflect immediately via volume mount)
+What type of change did you make?
   │
-  └─ NO → Are you testing production build?
-           ├─ YES → ✅ Rebuild required after code changes
-           │         docker compose build <service>
-           │
-           └─ NO → ❌ Switch to dev mode instead
-                    (production mode is too slow for development)
+  ├─ Source code (.py, .tsx, .ts, .css, etc.)
+  │   └─ ❌ No rebuild needed
+  │       Code is volume-mapped; hot reload picks up changes automatically.
+  │
+  ├─ Dependencies (requirements.txt, package.json)
+  │   └─ ❌ No rebuild needed — install inside the running container:
+  │       • Backend:  docker compose exec backend pip install -r requirements.txt
+  │       • Frontend: docker compose exec frontend npm install
+  │       The Dockerfile will pick these up on the next build automatically.
+  │
+  └─ Dockerfile, system packages, or base image
+      └─ ✅ Rebuild required:
+          docker compose build <service>
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d <service>
 ```
 
 ---

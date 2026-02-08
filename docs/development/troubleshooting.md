@@ -81,7 +81,11 @@ docker compose logs backend | grep -i error
 
 2. **Missing dependencies**:
    ```bash
-   # Rebuild with fresh dependency install
+   # First try: install inside the running container (fast)
+   docker compose exec backend pip install -r requirements.txt
+   docker compose exec frontend npm install
+
+   # Only if the above fails (e.g., system package missing): rebuild
    docker compose build --no-cache backend
    docker compose up -d backend
    ```
@@ -702,6 +706,8 @@ If you're stuck:
 | Cannot connect to database | Database not ready | Wait for healthy: `docker compose ps postgres` |
 | Tests pass but feature doesn't work | Testing in wrong environment | Test in container: `docker compose exec backend pytest` |
 | Task not found | Beads out of sync | Sync: `bd sync --from-main` |
+| New package not found | Dependency not installed in container | Install: `docker compose exec backend pip install -r requirements.txt` |
+| `npm` not found in frontend | Frontend running nginx (production stage) | Rebuild with development target: `docker compose build frontend` |
 | Port already in use | Previous service still running | Kill it: `docker compose down` then start fresh |
 | OpenSearch won't start | vm.max_map_count too low | Increase: `sudo sysctl -w vm.max_map_count=262144` |
 

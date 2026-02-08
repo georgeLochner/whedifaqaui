@@ -14,19 +14,31 @@ This document explains the Docker-based development workflow for agentic develop
 │                                                              │
 │  ./backend/app/           ← Agent edits code here            │
 │  ./frontend/src/                                             │
+│  requirements.txt         ← Dependency manifests             │
+│  package.json                                                │
 │                                                              │
 └──────────────────┬──────────────────────────────────────────┘
-                   │ Volume Mount
+                   │ Volume Mount (source code)
                    ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  Docker Container                            │
 │                                                              │
 │  /app/  ← Maps to host, changes appear immediately          │
 │                                                              │
-│  Dependencies: Python packages, Node modules, etc.           │
+│  Dependencies: Installed in container filesystem             │
+│    • Baked in at build time (Dockerfile RUN pip/npm install) │
+│    • Can be updated live: docker compose exec ... install    │
 │  Running Processes: Web servers, workers, etc.               │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+There are two types of changes during development, each with a different workflow:
+
+| Change Type | Workflow | Rebuild? |
+|-------------|----------|----------|
+| **Source code** | Edit on host → auto-reflected via volume mount | No |
+| **Dependencies** | Edit manifest on host → install inside container | No |
+| **Dockerfile / system packages** | Edit Dockerfile → rebuild image | Yes |
 
 ---
 
@@ -190,6 +202,176 @@ docker compose exec backend pytest tests/unit/test_videos.py -v
 git add backend/app/api/routes/videos.py
 git commit -m "Add video upload endpoint"
 ```
+
+---
+
+## Managing Dependencies (Without Rebuilding)
+
+Source code changes are handled by volume mounts. But what about adding a new Python package or npm module?
+
+### The Two-Path Model
+
+Dependencies are defined in manifest files (`requirements.txt`, `package.json`) which live on the host and are committed to git. These manifests are installed in two situations:
+
+1. **At image build time** — the Dockerfile runs `pip install` / `npm ci`, creating the baseline environment
+2. **During development** — `docker compose exec` installs into the running container for immediate use
+
+Both paths read from the same manifest files. The Dockerfile is the canonical source for reproducible builds; the exec command is a fast-path shortcut during development.
+
+### Adding a Backend Dependency
+
+```bash
+# 1. Edit requirements.txt on host (add the new package)
+#    e.g., add "boto3==1.34.0"
+
+# 2. Install inside the running container (fast, ~seconds)
+docker compose exec backend pip install -r requirements.txt
+
+# 3. Verify it works
+docker compose exec backend python -c "import boto3; print(boto3.__version__)"
+
+# 4. Commit requirements.txt
+git add backend/requirements.txt
+```
+
+### Adding a Frontend Dependency
+
+```bash
+# 1. Edit package.json on host (add the new package)
+#    e.g., add "lucide-react": "^0.300.0" to dependencies
+
+# 2. Install inside the running container (fast, ~seconds)
+docker compose exec frontend npm install
+
+# 3. Verify it works
+docker compose exec frontend node -e "require('lucide-react')"
+
+# 4. Commit package.json and package-lock.json
+git add frontend/package.json frontend/package-lock.json
+```
+
+**Important**: This only works when the frontend container runs the `development` stage (node-based). If the container is running the `production` stage (nginx), there is no `npm` available — see [Frontend Development Architecture](#frontend-development-architecture) below.
+
+### What Happens on Recovery / Fresh Setup
+
+If the container is destroyed (crash, `docker compose down`, fresh clone), the exec-installed packages are lost. Recovery is simply:
+
+```bash
+docker compose build                    # Dockerfile installs all deps from manifests
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose exec backend alembic upgrade head
+```
+
+This works because the manifest files (`requirements.txt`, `package.json`) were committed to git. The Dockerfile picks them up and installs everything from scratch.
+
+### When You MUST Rebuild
+
+Some changes cannot be applied with `exec` — they require `docker compose build`:
+
+| Change | Why rebuild is needed |
+|--------|----------------------|
+| Dockerfile changes | Build instructions changed |
+| System packages (apt-get) | Only installable during build |
+| Base image changes | New OS/runtime layer |
+| Build-time configuration | ENV, ARG, multi-stage targets |
+
+For everything else (source code, Python/Node packages), use the fast path.
+
+---
+
+## Frontend Development Architecture
+
+The frontend uses a **multi-stage Dockerfile** with separate stages for development and production:
+
+```dockerfile
+# Development stage — node + vite dev server (hot reload)
+FROM node:20-alpine as development
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
+# Build stage — produces static assets
+FROM node:20-alpine as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage — nginx serves static files
+FROM nginx:alpine as production
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+```
+
+**In development mode**, `docker-compose.yml` targets the `development` stage:
+
+```yaml
+frontend:
+    build:
+      context: ./frontend
+      target: development    # ← uses node, NOT nginx
+```
+
+And `docker-compose.dev.yml` overrides the command for hot reload:
+
+```yaml
+frontend:
+    command: npm run dev -- --host 0.0.0.0
+```
+
+This gives you:
+- A **node container** running vite's dev server with hot reload
+- Source code volume-mapped from host — changes reflect instantly
+- `npm install` works inside the container (node/npm available)
+- Hot Module Replacement (HMR) for instant browser updates
+
+**Common mistake**: If the Dockerfile only has `build` and `production` stages (missing the `development` stage), the container runs nginx. In that case:
+- Volume mounts are useless (nginx serves from `/usr/share/nginx/html`, not `/app`)
+- `npm` is not available (nginx:alpine has no node)
+- Every change requires a full image rebuild
+- Hot reload does not work
+
+---
+
+## Recovery From Scratch
+
+If the development environment is completely lost (server crash, fresh machine, etc.), here is the full recovery process:
+
+```bash
+# 1. Clone the repo (source code + manifests + Dockerfiles)
+git clone <repo-url> && cd <project>
+
+# 2. Build all images (installs deps from committed manifests)
+docker compose build
+
+# 3. Start in development mode
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# 4. Wait for infrastructure services to be healthy
+docker compose ps   # postgres, redis, opensearch should show "healthy"
+
+# 5. Run database migrations
+docker compose exec backend alembic upgrade head
+
+# 6. Verify
+curl -s http://localhost:8000/api/health    # Backend
+curl -s http://localhost:3000               # Frontend
+```
+
+**What gets restored:**
+- Source code — from git
+- Python packages — Dockerfile runs `pip install -r requirements.txt`
+- Node packages — Dockerfile runs `npm ci` (from `package.json` + `package-lock.json`)
+- Database schema — Alembic migrations (committed to git)
+- Infrastructure — Docker Compose recreates postgres, redis, opensearch
+
+**What is NOT restored:**
+- Database data (unless volumes survived the crash)
+- Uploaded files / processed media
+- OpenSearch indices (need re-indexing)
 
 ---
 
