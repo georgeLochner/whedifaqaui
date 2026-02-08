@@ -106,128 +106,44 @@ Each implementation task should specify which tests to run for verification. Add
    - Include the pytest/vitest command to run
 
 2. **Integration/E2E verification task** (MUST be the final task): Verify the feature works end-to-end
-   - Tests the maximum scope possible given what's implemented
-   - References test IDs from the test spec
-   - Includes exact commands to run tests
    - Gates feature completion
-   - **MUST include every E2E scenario listed in the parent feature's Testing Requirements** — do not omit or reinterpret them. If the feature says "E2E-01 (steps 1-5)", those steps go into this task verbatim.
+   - The task description MUST say: `Read prompt/e2e_verification.txt for instructions.`
+   - List the parent feature ID so the execution agent can cross-check
+   - List the test spec location and relevant test IDs
+   - **Copy every E2E scenario from the parent feature's Testing Requirements verbatim** — do not omit or reinterpret them. If the feature says "E2E-01 (steps 1-5)", those steps go into this task as-is.
+   - If this feature completes a cross-feature E2E chain (see below), include that scenario too
 
-### E2E Scope by Feature Position
+### Cross-Feature E2E Identification
 
-The E2E verification task should test as much of the stack as exists:
+Some E2E scenarios span multiple features. Check if this feature is the LAST dependency:
 
-| Feature Type | E2E Scope |
-|--------------|-----------|
-| Database/Models | Verify schema, test CRUD operations |
-| Backend Services | Service-level integration with DB |
-| Backend API | API-level E2E: HTTP → DB → response |
-| Frontend Components | Component tests with mocked API |
-| Frontend Pages (full stack) | Playwright: browser → API → DB → UI |
+1. Read the test specification's E2E section
+2. For each E2E scenario, note which user stories it requires
+3. If this feature covers the LAST required story → include that full E2E scenario in the verification task
 
 ### E2E Verification Task Template
 
 ```markdown
 ## Objective
-Verify [Feature Name] works end-to-end at [scope level].
+Verify [Feature Name] works end-to-end.
+
+Read prompt/e2e_verification.txt for instructions.
+
+Feature ID: <feature-id>
 
 ## Test Specification Reference
 - Document: docs/testing/phase{N}-test-specification.md
-- Section: [relevant section]
-- Test IDs: [list specific test IDs]
+- Sections: [relevant sections]
+- Test IDs: [list ALL test IDs from parent feature's Testing Requirements]
 
-## Tests to Run
-
-### Unit Tests
-\`\`\`bash
-cd backend && pytest tests/unit/test_[module].py -v
-\`\`\`
-Expected: All [X] tests pass
-
-### Integration Tests
-\`\`\`bash
-cd backend && pytest tests/integration/test_[feature].py -v
-\`\`\`
-Expected: All [X] tests pass
-
-### E2E Tests (if applicable)
-\`\`\`bash
-cd e2e && npx playwright test [spec].spec.ts
-\`\`\`
-Expected: Scenario passes, screenshots captured
-
-## Acceptance Criteria
-- [ ] All unit tests passing
-- [ ] All integration tests passing
-- [ ] E2E scenario passes (if applicable)
-- [ ] No regressions in existing tests
-```
-
-## Step 3c: E2E Scenarios
-
-There are two types of E2E scenarios to include in the final verification task.
-
-### Within-Feature E2E (from parent feature description)
-
-The parent feature's Testing Requirements section lists E2E scenarios that this feature is responsible for. These are **authoritative and mandatory** — copy them into the E2E verification task verbatim.
-
-**IMPORTANT**: The parent feature may scope an E2E scenario to specific steps (e.g., "E2E-01 (steps 1-5)"). This means those steps are testable with this feature alone. Do NOT dismiss them by looking at the full E2E scenario and concluding it requires other features. The parent feature has already done that scoping for you.
-
-For each within-feature E2E scenario, the verification task must:
-1. List the exact steps from the test specification
-2. Include commands to execute them (Playwright, curl, or manual verification)
-3. Include acceptance criteria for each step
-
-### Cross-Feature E2E (completing multi-feature chains)
-
-Some E2E scenarios span multiple features. When planning tasks, check if this feature completes the chain for any cross-feature E2E scenario.
-
-#### How to Identify Cross-Feature E2E Tests
-
-1. Read the test specification's E2E section
-2. For each E2E scenario, note which user stories it requires
-3. Check if this feature covers the LAST required user story
-4. If yes → include that E2E scenario in this feature's final testing task
-
-#### Example
-
-E2E-01 "Upload-to-search flow" requires: V1, V2, V3, S1
-
-- Feature A covered: V1, V2, V3 (Upload + Processing)
-- Feature B covers: S1 (Search)
-- Feature B is the LAST dependency for E2E-01
-- Therefore: Feature B's E2E task must include E2E-01
-
-### E2E Task Template Addition
-
-Include both types in the E2E verification task:
-
-```markdown
 ## Within-Feature E2E Scenarios
-
-From parent feature Testing Requirements:
-- E2E-XX (steps N-M): [scenario name]
-  - Step N: [action] → verify [expected result]
-  - Step N+1: [action] → verify [expected result]
-  - ...
-
-### Run Within-Feature E2E
-\`\`\`bash
-[exact commands — Playwright, curl, or manual verification steps]
-\`\`\`
-Expected: All steps pass
+[Copy verbatim from parent feature's Testing Requirements → E2E Scenarios section]
 
 ## Cross-Feature E2E Scenarios (if applicable)
+[Only if this feature completes a multi-feature E2E chain]
 
-This feature completes the requirements for:
-- E2E-XX: [scenario name]
-  - Required stories: [list]
-  - All prerequisites now complete
-
-### Run Cross-Feature E2E
-\`\`\`bash
-cd e2e && npx playwright test e2e-xx.spec.ts
-\`\`\`
-Expected: Full scenario passes
+## Tests to Run
+[List exact pytest/vitest commands for all test files in this feature]
 ```
 
 ## Step 4: Create Tasks
@@ -305,9 +221,9 @@ Before closing this task, verify:
 - [ ] Each task modifies 1-3 files
 - [ ] Each task has ONE clear deliverable
 - [ ] Each task includes specific test commands to run
-- [ ] Final task is E2E verification task
-- [ ] E2E task references test spec IDs
-- [ ] E2E task includes ALL E2E scenarios from parent feature's Testing Requirements (verbatim, not reinterpreted)
+- [ ] Final task is E2E verification task with `Read prompt/e2e_verification.txt for instructions.`
+- [ ] E2E task lists the parent feature ID and all test IDs from the feature's Testing Requirements
+- [ ] E2E task copies ALL E2E scenarios from parent feature verbatim (not reinterpreted)
 - [ ] Cross-feature E2E scenarios included if this feature completes them
 - [ ] Dependencies set: first task blocked by this task, chain through to last
 - [ ] No circular dependencies
@@ -379,32 +295,25 @@ bd create --title="E2E verification for Video Upload API" --type=task --parent=b
   --description="## Objective
 Verify Video Upload API works end-to-end.
 
+Read prompt/e2e_verification.txt for instructions.
+
+Feature ID: beads-feat-002
+
 ## Test Specification Reference
 - Document: docs/testing/phase1-test-specification.md
-- Section: V1 (Video Upload)
-- Test IDs: V1-U01 to V1-U04, V1-I01 to V1-I04
+- Sections: V1 (Video Upload), V3 (Processing Status)
+- Test IDs: V1-U01 to V1-U04, V1-I01 to V1-I04, V1-F01 to V1-F04, V3-U01, V3-U02, V3-I02, V3-I03, V3-F01 to V3-F03
+
+## Within-Feature E2E Scenarios
+- E2E-01 (steps 1-5): Upload flow - navigate to upload, fill form, submit, observe progress, wait for status
+- E2E-05: Error handling - upload corrupted file, observe error status
 
 ## Tests to Run
-
-### Unit Tests
 \`\`\`bash
-cd backend && pytest tests/unit/test_video_schema.py -v
-\`\`\`
-Expected: All V1-U tests pass
-
-### Integration Tests
-\`\`\`bash
-cd backend && pytest tests/integration/test_video_api.py -v
-\`\`\`
-Expected: All V1-I tests pass
-
-## Acceptance Criteria
-- [ ] All unit tests passing
-- [ ] All integration tests passing
-- [ ] POST /videos creates record and returns ID
-- [ ] GET /videos returns list
-- [ ] GET /videos/{id}/status returns current status
-- [ ] No regressions in existing tests"
+docker compose exec backend pytest tests/unit/test_video_schema.py -v
+docker compose exec backend pytest tests/integration/test_video_api.py -v
+docker compose exec frontend npm test
+\`\`\`"
 # Returns: beads-task-105
 
 # Set dependencies

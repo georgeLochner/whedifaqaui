@@ -1,0 +1,127 @@
+# E2E Verification Task Prompt
+
+You are verifying that a feature works end-to-end and that all testing requirements have been met. This is the final quality gate before the feature can be closed.
+
+## Step 1: Understand What Was Promised
+
+Run `bd show <feature-id>` to read the parent feature description. Pay close attention to:
+- **Testing Requirements** → Unit Tests, Integration Tests, E2E Scenarios
+- **Quality Gate** → The conditions that must ALL be satisfied
+
+These are authoritative. Every item listed must be verified.
+
+## Step 2: Run All Automated Tests
+
+Re-run every test suite to confirm they pass in a clean state.
+
+### Backend Tests
+```bash
+docker compose exec backend pytest tests/unit/ -v
+docker compose exec backend pytest tests/integration/ -v
+```
+
+### Frontend Tests
+```bash
+docker compose exec frontend npm test
+```
+
+Record the results: total tests, passed, failed.
+
+## Step 3: Execute Within-Feature E2E Scenarios
+
+The parent feature's Testing Requirements lists E2E scenarios with specific steps. Execute each one.
+
+### For API-level E2E steps
+Use curl or httpie to exercise the endpoints directly:
+```bash
+# Example: Upload a file, verify it appears in the list
+curl -X POST http://localhost:8000/api/videos -F "file=@test.mkv" -F "title=Test"
+curl -s http://localhost:8000/api/videos | python3 -m json.tool
+```
+
+### For browser-level E2E steps
+If the E2E scenario describes UI interactions (navigate to page, fill form, click button, verify result), you must verify through the browser — not just through the API. Use Playwright or manual browser verification:
+```bash
+cd e2e && npx playwright test [spec].spec.ts
+```
+
+If Playwright tests don't exist yet for these scenarios, perform manual verification through the browser and document what you observed.
+
+### For each E2E step, record
+- Step number and description
+- What you did
+- What you observed
+- PASS or FAIL
+
+## Step 4: Parent Feature Cross-Check
+
+This is the critical step. Read the parent feature (`bd show <feature-id>`) and systematically verify:
+
+### Test ID Coverage
+For every test ID listed in the parent feature's Testing Requirements:
+- [ ] A corresponding test exists in the test files
+- [ ] That test was executed and passed
+
+If a test ID was listed but no test was written, **write it now** before proceeding.
+
+### E2E Scenario Coverage
+For every E2E scenario listed in the parent feature's Testing Requirements:
+- [ ] The scenario was executed (not just the automated tests — the actual steps)
+- [ ] Each step produced the expected result
+
+If an E2E scenario was listed but not executed, **execute it now** before proceeding.
+
+### Quality Gate
+For every item in the parent feature's Quality Gate section:
+- [ ] The condition is satisfied
+
+### What to do if something is missing
+Do NOT close this task if any requirement is unmet. Instead:
+1. Implement the missing test or fix the failing scenario
+2. Re-run to confirm it passes
+3. Then proceed to close
+
+## Step 5: Check for Regressions
+
+Verify that pre-existing functionality still works:
+```bash
+# Run full backend test suite (not just this feature's tests)
+docker compose exec backend pytest tests/ -v
+
+# Run full frontend test suite
+docker compose exec frontend npm test
+
+# Health endpoint
+curl -s http://localhost:8000/api/health
+```
+
+## Step 6: Report Results
+
+Before closing, output a summary:
+
+```
+## E2E Verification Report
+
+### Automated Tests
+- Backend unit tests: X passed, Y failed
+- Backend integration tests: X passed, Y failed
+- Frontend tests: X passed, Y failed
+
+### E2E Scenarios
+- E2E-XX (steps N-M): PASS/FAIL
+  - Step N: PASS/FAIL - [details]
+  - Step N+1: PASS/FAIL - [details]
+
+### Parent Feature Cross-Check
+- Test IDs: X/Y covered
+- E2E scenarios: X/Y executed
+- Quality Gate: ALL/NOT ALL satisfied
+
+### Regressions
+- Full test suite: PASS/FAIL
+- Health endpoint: PASS/FAIL
+
+### Result: PASS / FAIL
+```
+
+Only close this task when Result is PASS.
