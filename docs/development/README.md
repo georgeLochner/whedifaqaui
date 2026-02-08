@@ -57,7 +57,7 @@ The development process bridges planning (requirements, design, implementation p
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**The scaffolding phase is critical.** If the development environment is not fully set up before implementation begins, coding agents will waste time on infrastructure work, make incorrect assumptions about the container setup, or use slow workflows (e.g., rebuilding images instead of using volume mounts). The scaffolding phase ensures that by the time an implementation agent starts, the only thing it needs to do is edit code, install packages, and run tests.
+**Why a separate scaffolding phase?** In theory, infrastructure can be set up incrementally alongside feature work. In practice, environment setup often involves escalated privileges (e.g., `sudo sysctl` for OpenSearch), missing system dependencies that require debugging, Docker build failures, and port/network issues — all of which require human intervention. By front-loading this work into a dedicated phase where a human can monitor and resolve issues, the implementation phases can run with extended autonomy. The goal is that by the time an implementation agent starts, the only thing it needs to do is edit code, install packages, and run tests.
 
 ---
 
