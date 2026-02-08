@@ -110,6 +110,7 @@ Each implementation task should specify which tests to run for verification. Add
    - References test IDs from the test spec
    - Includes exact commands to run tests
    - Gates feature completion
+   - **MUST include every E2E scenario listed in the parent feature's Testing Requirements** — do not omit or reinterpret them. If the feature says "E2E-01 (steps 1-5)", those steps go into this task verbatim.
 
 ### E2E Scope by Feature Position
 
@@ -161,18 +162,33 @@ Expected: Scenario passes, screenshots captured
 - [ ] No regressions in existing tests
 ```
 
-## Step 3c: Cross-Feature E2E Tests
+## Step 3c: E2E Scenarios
+
+There are two types of E2E scenarios to include in the final verification task.
+
+### Within-Feature E2E (from parent feature description)
+
+The parent feature's Testing Requirements section lists E2E scenarios that this feature is responsible for. These are **authoritative and mandatory** — copy them into the E2E verification task verbatim.
+
+**IMPORTANT**: The parent feature may scope an E2E scenario to specific steps (e.g., "E2E-01 (steps 1-5)"). This means those steps are testable with this feature alone. Do NOT dismiss them by looking at the full E2E scenario and concluding it requires other features. The parent feature has already done that scoping for you.
+
+For each within-feature E2E scenario, the verification task must:
+1. List the exact steps from the test specification
+2. Include commands to execute them (Playwright, curl, or manual verification)
+3. Include acceptance criteria for each step
+
+### Cross-Feature E2E (completing multi-feature chains)
 
 Some E2E scenarios span multiple features. When planning tasks, check if this feature completes the chain for any cross-feature E2E scenario.
 
-### How to Identify Cross-Feature E2E Tests
+#### How to Identify Cross-Feature E2E Tests
 
 1. Read the test specification's E2E section
 2. For each E2E scenario, note which user stories it requires
 3. Check if this feature covers the LAST required user story
 4. If yes → include that E2E scenario in this feature's final testing task
 
-### Example
+#### Example
 
 E2E-01 "Upload-to-search flow" requires: V1, V2, V3, S1
 
@@ -181,12 +197,26 @@ E2E-01 "Upload-to-search flow" requires: V1, V2, V3, S1
 - Feature B is the LAST dependency for E2E-01
 - Therefore: Feature B's E2E task must include E2E-01
 
-### Cross-Feature E2E Task Addition
+### E2E Task Template Addition
 
-When this feature completes a cross-feature E2E scenario, add to the E2E verification task:
+Include both types in the E2E verification task:
 
 ```markdown
-## Cross-Feature E2E Scenarios
+## Within-Feature E2E Scenarios
+
+From parent feature Testing Requirements:
+- E2E-XX (steps N-M): [scenario name]
+  - Step N: [action] → verify [expected result]
+  - Step N+1: [action] → verify [expected result]
+  - ...
+
+### Run Within-Feature E2E
+\`\`\`bash
+[exact commands — Playwright, curl, or manual verification steps]
+\`\`\`
+Expected: All steps pass
+
+## Cross-Feature E2E Scenarios (if applicable)
 
 This feature completes the requirements for:
 - E2E-XX: [scenario name]
@@ -277,6 +307,7 @@ Before closing this task, verify:
 - [ ] Each task includes specific test commands to run
 - [ ] Final task is E2E verification task
 - [ ] E2E task references test spec IDs
+- [ ] E2E task includes ALL E2E scenarios from parent feature's Testing Requirements (verbatim, not reinterpreted)
 - [ ] Cross-feature E2E scenarios included if this feature completes them
 - [ ] Dependencies set: first task blocked by this task, chain through to last
 - [ ] No circular dependencies
@@ -293,6 +324,7 @@ Run `bd show <feature-id>` to see all children and verify the structure.
 6. **Vague acceptance criteria**: "It works" is not verifiable - specify test IDs and commands
 7. **Forgetting cross-feature E2E**: Check if this feature unlocks any E2E scenarios
 8. **Tests written but not run**: Tests are a feedback loop - agents must run them
+9. **Reinterpreting parent E2E scope**: If the parent feature lists "E2E-01 (steps 1-5)", do NOT look at the full E2E-01 (12 steps) and conclude it requires other features. The parent already scoped it — carry it forward verbatim.
 
 ## Example: Video Upload API Feature
 
