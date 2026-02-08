@@ -305,9 +305,8 @@ git commit -m "<task-id>: Partial - Add video upload endpoint (handoff)"
    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
 
-4. **If still old**, you may be in production mode:
-   - Production mode requires rebuild (see docker-workflow.md)
-   - Switch to dev mode instead
+4. **If still old**, volume mount may not be active:
+   - Restart with dev compose file (see docker-workflow.md)
 
 ---
 
@@ -421,22 +420,6 @@ docker compose exec backend vim /app/app/api/routes/videos.py
 
 ---
 
-### ❌ Don't: Use Production Mode for Development
-
-```bash
-# WRONG (for development work)
-docker compose up -d
-# ... edit code ...
-# ... test (but changes don't appear!) ...
-# ... rebuild (waste time) ...
-```
-
-**Why?** Production mode requires rebuild after every change (slow).
-
-**Instead:** Use development mode with volume mounts.
-
----
-
 ### ❌ Don't: Commit Without Testing
 
 ```bash
@@ -498,7 +481,7 @@ vim backend/requirements.txt                                    # Add new packag
 docker compose exec backend pip install -r requirements.txt     # Fast (~seconds)
 ```
 
-The Dockerfile will pick up the updated manifest on the next build (recovery, fresh setup, or production build).
+The Dockerfile will pick up the updated manifest on the next build (recovery or fresh setup).
 
 ---
 

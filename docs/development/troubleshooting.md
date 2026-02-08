@@ -25,28 +25,15 @@ docker inspect <container-name> | grep -A10 Mounts
 
 **Solutions**:
 
-1. **Not using development mode**:
-   ```bash
-   docker compose down
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-   ```
-
-2. **Hot reload not triggered**:
+1. **Hot reload not triggered**:
    ```bash
    docker compose restart backend
    ```
 
-3. **Using production mode** (code baked into image):
+2. **Volume mount not active** — Restart with dev compose file:
    ```bash
-   # Either switch to dev mode, or rebuild:
-   docker compose build backend
-   docker compose up -d backend
-   ```
-
-4. **Docker layer cache issue**:
-   ```bash
-   docker compose build --no-cache backend
-   docker compose up -d backend
+   docker compose down
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
 
 ---
@@ -637,7 +624,6 @@ docker compose exec backend alembic upgrade head
 ```
 
 **Warning**: This deletes all data. Only use if:
-- Development environment (not production)
 - Data is not important
 - Nothing else worked
 
@@ -701,13 +687,13 @@ If you're stuck:
 
 | Symptom | Most Likely Cause | Quick Fix |
 |---------|-------------------|-----------|
-| Code changes not appearing | Production mode (no volume mount) | Use dev mode: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
+| Code changes not appearing | Volume mount not active | Restart: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
 | Tests fail with import error | File not created or missing `__init__.py` | Create file, add `__init__.py` |
 | Cannot connect to database | Database not ready | Wait for healthy: `docker compose ps postgres` |
 | Tests pass but feature doesn't work | Testing in wrong environment | Test in container: `docker compose exec backend pytest` |
 | Task not found | Beads out of sync | Sync: `bd sync --from-main` |
 | New package not found | Dependency not installed in container | Install: `docker compose exec backend pip install -r requirements.txt` |
-| `npm` not found in frontend | Frontend running nginx (production stage) | Rebuild with development target: `docker compose build frontend` |
+| `npm` not found in frontend | Frontend container missing development stage | Rebuild: `docker compose build frontend` then restart |
 | Port already in use | Previous service still running | Kill it: `docker compose down` then start fresh |
 | OpenSearch won't start | vm.max_map_count too low | Increase: `sudo sysctl -w vm.max_map_count=262144` |
 

@@ -6,7 +6,7 @@ This directory documents the **autonomous agentic development workflow** - a gen
 
 ## Overview
 
-The development process bridges planning (requirements, design, implementation plans) and deployment (production systems). It defines how autonomous coding agents work within Docker-based development environments to execute implementation tasks.
+The development process bridges planning (requirements, design, implementation plans) and execution. It defines how autonomous coding agents work within Docker-based development environments to execute implementation tasks.
 
 **Key Principle**: Code is developed in volume-mapped containers where dependencies run in isolation, but source code remains on the host filesystem for immediate reflection of changes.
 
@@ -43,15 +43,6 @@ The development process bridges planning (requirements, design, implementation p
 │  4. Agent runs tests/verification inside containers                 │
 │  5. Agent commits changes when verification passes                  │
 │  6. Agent closes task and picks up next one                         │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                   PRODUCTION VERIFICATION                            │
-│                                                                      │
-│  • Build production Docker images (code baked in)                   │
-│  • Run integration tests against production build                   │
-│  • Deploy if all tests pass                                         │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -89,20 +80,16 @@ Phase → Features → Plan tasks → Implementation tasks → E2E verification
 
 **Structure**:
 ```
-docker-compose.yml           # Base configuration (production-style)
-docker-compose.dev.yml       # Development overrides (volume mounts)
+docker-compose.yml           # Base configuration (services, ports, health checks)
+docker-compose.dev.yml       # Development overrides (volume mounts, hot reload)
 ```
 
-**Development Mode**:
+**How it works**:
 - Application code mounted as volumes: `./backend:/app`, `./frontend:/app`
-- Hot reload enabled (web server watches for file changes)
+- Hot reload enabled (server watches for file changes)
 - No rebuild required when editing code
+- Dependencies installed via `docker compose exec` (no rebuild for new packages either)
 - Fast iteration cycle
-
-**Production Mode**:
-- Code copied into image at build time: `COPY . /app`
-- Rebuild required after any code change
-- Used for final verification and deployment
 
 **Detail**: [docker-workflow.md](docker-workflow.md)
 
@@ -163,7 +150,7 @@ docker-compose.dev.yml       # Development overrides (volume mounts)
 ✅ **Fast iteration**: No rebuild cycle slows down agent work
 ✅ **Isolated dependencies**: Agents don't need to install databases, search engines, etc.
 ✅ **Reproducible environment**: Same Docker setup across all agents and human developers
-✅ **Verification built-in**: Tests run in same environment as production
+✅ **Verification built-in**: Tests run inside containers matching the target environment
 ✅ **Stateless agents**: Any agent can pick up any task with fresh context
 
 ### For Human Developers

@@ -1,6 +1,6 @@
 # Docker Development Workflow
 
-This document explains the Docker-based development workflow for agentic development projects, focusing on the distinction between development and production modes.
+This document explains the Docker-based development workflow for agentic development projects.
 
 ---
 
@@ -42,92 +42,21 @@ There are two types of changes during development, each with a different workflo
 
 ---
 
-## Two Modes: Development vs Production
+## Configuration
 
-### Development Mode (Recommended for Agent Work)
+Development uses two Docker Compose files merged together:
 
-**Purpose**: Fast iteration during development
-
-**Configuration**: `docker-compose.yml` + `docker-compose.dev.yml`
-
-**Key Characteristics**:
-- ✅ Source code volume-mapped from host
-- ✅ Hot reload enabled (server watches for file changes)
-- ✅ **No rebuild needed** when editing code
-- ✅ Changes reflect immediately in running containers
-- ✅ Fast iteration cycle (~seconds to see changes)
-
-**When to use**: All development work, testing, debugging, agent execution
-
-**How to start**:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
----
-
-### Production Mode (For Final Verification)
-
-**Purpose**: Test production build before deployment
-
-**Configuration**: `docker-compose.yml` only
-
-**Key Characteristics**:
-- 📦 Source code copied into image at build time (`COPY . /app`)
-- 📦 No volume mounts for application code
-- ⚠️ **Rebuild required** after any code change
-- ⚠️ Slow iteration cycle (~minutes to rebuild)
-- ✅ Matches production deployment exactly
-
-**When to use**: Final integration testing, pre-deployment verification
-
-**How to start**:
-```bash
-docker compose up -d
-```
-
-**After code changes**:
-```bash
-docker compose build <service>  # Rebuild the image
-docker compose up -d <service>  # Restart with new image
-```
-
----
-
-## File Structure
-
 ### Base Configuration: `docker-compose.yml`
 
-```yaml
-services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=postgresql://...
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-    # Note: No volume mount for /app
-    # Code is baked in via Dockerfile COPY
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: mydb
-    volumes:
-      - postgres_data:/var/lib/postgresql/data  # Data persists
-    ports:
-      - "5432:5432"
-
-volumes:
-  postgres_data:
-```
+Defines all services, build contexts, ports, health checks, and dependencies.
 
 ### Development Overrides: `docker-compose.dev.yml`
+
+Adds volume mounts and hot-reload commands:
 
 ```yaml
 services:
@@ -136,33 +65,26 @@ services:
       - ./backend:/app           # Mount source code
       - /app/__pycache__         # Exclude cache
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    # --reload flag enables hot reload
 
   frontend:
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules        # Preserve node_modules in container
+    command: npm run dev -- --host 0.0.0.0
 ```
 
 **Key points**:
 - Volume mount: `./backend:/app` makes host code visible in container
 - Exclude patterns: `/app/__pycache__` prevents cache conflicts
 - Hot reload: `--reload` flag watches for file changes
+- Frontend: `npm run dev` runs vite's dev server with Hot Module Replacement
 
 ---
 
-## How Development Mode Works
+## How It Works
 
 ### 1. Start Services
 
 ```bash
-# Start all services with development overrides
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
-
-Docker Compose merges the two files:
-- Base configuration from `docker-compose.yml`
-- Development overrides from `docker-compose.dev.yml`
 
 ### 2. Edit Code on Host
 
@@ -192,7 +114,6 @@ vim ./backend/app/api/routes/videos.py
 ### 4. Test Changes
 
 ```bash
-# Run tests inside the container against the updated code
 docker compose exec backend pytest tests/unit/test_videos.py -v
 ```
 
@@ -250,8 +171,6 @@ docker compose exec frontend node -e "require('lucide-react')"
 git add frontend/package.json frontend/package-lock.json
 ```
 
-**Important**: This only works when the frontend container runs the `development` stage (node-based). If the container is running the `production` stage (nginx), there is no `npm` available — see [Frontend Development Architecture](#frontend-development-architecture) below.
-
 ### What Happens on Recovery / Fresh Setup
 
 If the container is destroyed (crash, `docker compose down`, fresh clone), the exec-installed packages are lost. Recovery is simply:
@@ -281,32 +200,7 @@ For everything else (source code, Python/Node packages), use the fast path.
 
 ## Frontend Development Architecture
 
-The frontend uses a **multi-stage Dockerfile** with separate stages for development and production:
-
-```dockerfile
-# Development stage — node + vite dev server (hot reload)
-FROM node:20-alpine as development
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
-
-# Build stage — produces static assets
-FROM node:20-alpine as build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Production stage — nginx serves static files
-FROM nginx:alpine as production
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-```
-
-**In development mode**, `docker-compose.yml` targets the `development` stage:
+The frontend Dockerfile has a `development` stage that runs the vite dev server (node-based, with hot reload). The `docker-compose.yml` targets this stage:
 
 ```yaml
 frontend:
@@ -315,7 +209,7 @@ frontend:
       target: development    # ← uses node, NOT nginx
 ```
 
-And `docker-compose.dev.yml` overrides the command for hot reload:
+And `docker-compose.dev.yml` overrides the command:
 
 ```yaml
 frontend:
@@ -327,12 +221,6 @@ This gives you:
 - Source code volume-mapped from host — changes reflect instantly
 - `npm install` works inside the container (node/npm available)
 - Hot Module Replacement (HMR) for instant browser updates
-
-**Common mistake**: If the Dockerfile only has `build` and `production` stages (missing the `development` stage), the container runs nginx. In that case:
-- Volume mounts are useless (nginx serves from `/usr/share/nginx/html`, not `/app`)
-- `npm` is not available (nginx:alpine has no node)
-- Every change requires a full image rebuild
-- Hot reload does not work
 
 ---
 
@@ -375,88 +263,12 @@ curl -s http://localhost:3000               # Frontend
 
 ---
 
-## How Production Mode Works
-
-### 1. Start Services (Production Mode)
-
-```bash
-# Start without dev overrides
-docker compose up -d
-```
-
-### 2. Code is Baked Into Image
-
-From `backend/Dockerfile`:
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install dependencies
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# Copy source code into image
-COPY . .
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-The `COPY . .` command bakes the code into the image at build time.
-
-### 3. Edit Code on Host
-
-```bash
-vim ./backend/app/api/routes/videos.py
-```
-
-### 4. Changes DO NOT Reflect
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Host: ./backend/app/api/routes/videos.py                    │
-│       ↓ (file modified)                                      │
-│       ✗ (not mounted)                                        │
-│                                                              │
-│ Container: /app/app/api/routes/videos.py                    │
-│       ↑ (still has old code from image build)               │
-│                                                              │
-│ Result: Running container sees no change                    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Rebuild required!**
-
-### 5. Rebuild and Restart
-
-```bash
-# Rebuild the image with new code
-docker compose build backend
-
-# Restart container with new image
-docker compose up -d backend
-
-# Or do both in one command:
-docker compose up -d --build backend
-```
-
-### 6. Force Rebuild Without Cache (if needed)
-
-If Docker's layer cache doesn't detect changes:
-
-```bash
-docker compose build --no-cache backend
-docker compose up -d backend
-```
-
----
-
 ## Common Workflows
 
-### Starting Fresh (Development Mode)
+### Starting Fresh
 
 ```bash
-# 1. Start all services with dev mode
+# 1. Start all services
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # 2. Check all services are healthy
@@ -475,8 +287,8 @@ docker compose exec backend alembic upgrade head
 # Edit code on host (use your IDE, vim, etc.)
 vim backend/app/api/routes/videos.py
 
-# Changes appear immediately (if hot reload enabled)
-# Otherwise, restart just that service:
+# Changes appear immediately (hot reload)
+# If not, restart the service:
 docker compose restart backend
 
 # Test your changes
@@ -487,58 +299,27 @@ git add backend/app/api/routes/videos.py
 git commit -m "Add video upload"
 ```
 
-### Verifying Production Build
-
-```bash
-# Stop dev mode services
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
-
-# Start production mode
-docker compose up -d
-
-# Run integration tests
-docker compose exec backend pytest tests/integration/
-
-# If tests pass, build is ready for deployment
-```
-
 ### Troubleshooting: Code Changes Not Appearing
 
 **Symptom**: You edited code but the running container still behaves the old way.
 
 **Diagnosis**:
 ```bash
-# Check if you're in dev mode
-docker compose ps
-# Look for volume mounts in the output
-
 # Check what code is actually in the container
 docker compose exec backend cat /app/app/api/routes/videos.py
 ```
 
 **Solutions**:
 
-1. **Not using dev mode** - Restart with dev compose file:
-   ```bash
-   docker compose down
-   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-   ```
-
-2. **Hot reload not working** - Restart the service:
+1. **Hot reload not triggered** — Restart the service:
    ```bash
    docker compose restart backend
    ```
 
-3. **Using production mode** - Rebuild is required:
+2. **Volume mount not active** — Restart with dev compose file:
    ```bash
-   docker compose build backend
-   docker compose up -d backend
-   ```
-
-4. **Docker cache issue** - Force rebuild:
-   ```bash
-   docker compose build --no-cache backend
-   docker compose up -d backend
+   docker compose down
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
 
 ---
@@ -547,26 +328,29 @@ docker compose exec backend cat /app/app/api/routes/videos.py
 
 ### ✅ DO
 
-- **Always start in development mode** for task work
 - **Edit code on host filesystem** (not inside containers)
+- **Install dependencies via exec** (not via rebuild)
 - **Run tests inside containers** via `docker compose exec`
 - **Verify changes work** before committing
 - **Check logs** if behavior unexpected: `docker compose logs <service>`
 
 ### ❌ DON'T
 
-- **Don't use production mode** for development work (too slow)
+- **Don't rebuild images** to install Python/Node packages
 - **Don't edit files inside containers** (changes will be lost)
 - **Don't commit without testing** in the container environment
-- **Don't mix modes** (pick dev or prod, don't switch mid-task)
 
 ### When Something Goes Wrong
 
-1. **Check which mode you're in**: `docker compose ps`
-2. **Verify code in container**: `docker compose exec <service> cat /path/to/file`
-3. **Check logs**: `docker compose logs -f <service>`
-4. **Restart service if needed**: `docker compose restart <service>`
-5. **Last resort**: Stop everything and start fresh in dev mode
+1. **Verify code in container**: `docker compose exec <service> cat /path/to/file`
+2. **Check logs**: `docker compose logs -f <service>`
+3. **Restart service if needed**: `docker compose restart <service>`
+4. **Last resort**: Stop everything and start fresh:
+   ```bash
+   docker compose down
+   docker compose build
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   ```
 
 ---
 
@@ -574,15 +358,7 @@ docker compose exec backend cat /app/app/api/routes/videos.py
 
 ### Adding a New Service
 
-1. **Add to base `docker-compose.yml`**:
-   ```yaml
-   myservice:
-     build: ./myservice
-     ports:
-       - "8080:8080"
-     depends_on:
-       - postgres
-   ```
+1. **Add to base `docker-compose.yml`** with build context, ports, health checks
 
 2. **Add dev overrides in `docker-compose.dev.yml`**:
    ```yaml
@@ -611,18 +387,3 @@ volumes:
   - /app/.pytest_cache      # Pytest cache
   - /app/node_modules       # Node dependencies (frontend)
 ```
-
----
-
-## Summary
-
-| Aspect | Development Mode | Production Mode |
-|--------|------------------|-----------------|
-| **Usage** | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | `docker compose up -d` |
-| **Code location** | Volume-mapped from host | Baked into image |
-| **After code change** | Automatic reload (~seconds) | Rebuild required (~minutes) |
-| **Use case** | Development, testing, agent work | Final verification, deployment |
-| **Rebuild needed?** | ❌ No | ✅ Yes |
-| **Speed** | ⚡ Fast | 🐢 Slow |
-
-**Default for agents**: Always use **Development Mode** unless explicitly testing production builds.
