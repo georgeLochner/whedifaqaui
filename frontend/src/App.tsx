@@ -44,7 +44,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/upload" element={<UploadPage />} />
-          <Route path="/video/:id" element={<VideoPage />} />
+          <Route path="/videos/:id" element={<VideoPage />} />
         </Routes>
       </main>
     </div>
