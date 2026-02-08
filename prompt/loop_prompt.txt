@@ -37,7 +37,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{unix_timestamp}_{task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
@@ -46,7 +46,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{unix_timestamp}_{task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
@@ -55,14 +55,14 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ./run_claude_agent.sh \
   --prompt "Complete task <task-id> in feature <feature-id>. Exit after completion." \
   --output-dir logs/run/{unix_timestamp}_{task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus \
   --resume <session_id>
 ```
 
 Do not use extended thinking for initial attempts.
 
-**Central Logging**: All agents automatically log to `logs/coder.log` (consolidated view). Watch all coding agent activity with `tail -f logs/coder.log`.
+**Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
 ### Step 4: Wait for completion
 The script will block until the agent exits. Capture the output which includes:
@@ -118,7 +118,7 @@ bd show <task-id>
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{unix_timestamp}_{blocking_task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
 ```
@@ -143,7 +143,7 @@ Assign fresh agent (no extended thinking - context was the issue, not difficulty
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{unix_timestamp}_{task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
@@ -154,7 +154,7 @@ The agent failed for a non-context reason. Use extended thinking to help debug:
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir logs/run/{unix_timestamp}_{task_id} \
-  --central-log logs/coder.log \
+  --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
 ```
