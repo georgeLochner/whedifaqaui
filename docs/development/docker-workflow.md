@@ -8,6 +8,18 @@ This document explains the Docker-based development workflow for agentic develop
 
 **Principle**: Dependencies run in containers. Source code lives on the host and is volume-mapped for immediate reflection of changes.
 
+### Dependency Pre-Loading
+
+All dependencies listed in the technology stack (e.g., `technology-stack.md`) across **all planned phases** must be installed into the Docker images during the initial environment setup (Phase 0 or equivalent scaffolding). This means:
+
+- `requirements.txt` includes every Python package from the technology stack — not just the packages needed for scaffolding
+- `package.json` includes every npm package from the technology stack
+- The Dockerfile installs any required system packages (e.g., `ffmpeg`, `libsndfile1`)
+
+**Why**: Feature agents should never need to install dependencies. When an agent starts working on a feature, every import should already work. Dependency management during feature development is a distraction that wastes agent context and risks inconsistent environments.
+
+**The fast-path install** (`docker compose exec ... pip install`) exists for cases where a dependency was missed or a new one is discovered during development. It is a recovery mechanism, not the normal workflow.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Host Filesystem                         │
@@ -200,19 +212,13 @@ For everything else (source code, Python/Node packages), use the fast path.
 
 ## Frontend Development Architecture
 
-The frontend Dockerfile has a `development` stage that runs the vite dev server (node-based, with hot reload). The `docker-compose.yml` targets this stage:
+The frontend Dockerfile is a single-stage `node:20-alpine` image that runs the vite dev server with hot reload. The `docker-compose.dev.yml` overrides the command and adds volume mounts:
 
 ```yaml
 frontend:
-    build:
-      context: ./frontend
-      target: development    # ← uses node, NOT nginx
-```
-
-And `docker-compose.dev.yml` overrides the command:
-
-```yaml
-frontend:
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules    # Preserve container's node_modules
     command: npm run dev -- --host 0.0.0.0
 ```
 
@@ -252,7 +258,7 @@ curl -s http://localhost:3000               # Frontend
 **What gets restored:**
 - Source code — from git
 - Python packages — Dockerfile runs `pip install -r requirements.txt`
-- Node packages — Dockerfile runs `npm ci` (from `package.json` + `package-lock.json`)
+- Node packages — Dockerfile runs `npm install` (from `package.json`)
 - Database schema — Alembic migrations (committed to git)
 - Infrastructure — Docker Compose recreates postgres, redis, opensearch
 
