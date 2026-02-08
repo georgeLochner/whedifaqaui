@@ -1,18 +1,14 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.core.database import Base
-# Import all models here so they are registered with Base.metadata
-# from app.models import video, transcript, etc.
+from app.models import Segment, Transcript, Video  # noqa: F401
 
 config = context.config
 
-# Override sqlalchemy.url with environment variable
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 if config.config_file_name is not None:
