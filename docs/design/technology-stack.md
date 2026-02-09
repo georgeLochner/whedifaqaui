@@ -69,12 +69,11 @@ This document details all technologies, libraries, and frameworks used in Whedif
 
 **Base Images for Application Containers:**
 
-| Container | Base Image | Version |
-|-----------|------------|---------|
-| Backend | `python:3.11-slim` | 3.11 |
-| Worker | `python:3.11-slim` | 3.11 |
-| Worker-GPU | `nvidia/cuda:12.1.0-runtime-ubuntu22.04` | CUDA 12.1 |
-| Frontend | `node:20-alpine` | Node 20 LTS |
+| Container | Base Image | Version | Notes |
+|-----------|------------|---------|-------|
+| Backend + Worker | `python:3.11-slim` | 3.11 | Single shared image (`whedifaqaui-backend:phase1-deps`); services differ only by command |
+| Worker-GPU | `nvidia/cuda:12.1.0-runtime-ubuntu22.04` | CUDA 12.1 | Optional, for GPU-accelerated transcription |
+| Frontend | `node:20-alpine` | Node 20 LTS | |
 
 **Why these specific versions:**
 - **Patch version pinning** (16.1, not 16.x) prevents unexpected minor updates

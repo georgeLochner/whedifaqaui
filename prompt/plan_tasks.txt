@@ -65,27 +65,23 @@ Each task must be scoped so a coding agent can complete it within context limits
 Look at the feature's "Files to Create" and "Files to Modify" lists. Common patterns:
 
 ### Backend Feature
-1. Create/update database model(s)
-2. Create Pydantic schemas
-3. Implement service layer logic
-4. Create API endpoint(s)
-5. Write unit tests
-6. Run integration tests (E2E verification)
+1. Create/update database model(s) + verify with migration
+2. Create Pydantic schemas + unit tests for validation
+3. Implement service layer logic + unit tests for service functions
+4. Create API endpoint(s) + integration tests for endpoints
+5. E2E verification
 
 ### Frontend Feature
-1. Create TypeScript types
-2. Create API client functions
-3. Implement component(s)
-4. Create page and wire up routing
-5. Write unit tests
-6. Run E2E verification (Playwright)
+1. Create API client functions + TypeScript types
+2. Implement component(s) + unit tests for each component
+3. Create page, wire up routing + page-level tests
+4. E2E verification (Playwright)
 
 ### Processing/Pipeline Feature
-1. Implement core logic (service)
-2. Create Celery task wrapper
-3. Wire up task triggers
-4. Write unit tests
-5. Run integration tests (E2E verification)
+1. Implement core logic (service) + unit tests for service functions
+2. Create Celery task wrapper + unit tests for task logic
+3. Wire up task triggers + integration tests
+4. E2E verification
 
 ### Infrastructure Feature
 1. Create configuration
@@ -93,19 +89,29 @@ Look at the feature's "Files to Create" and "Files to Modify" lists. Common patt
 3. Write migrations
 4. Verify with smoke test
 
-## Step 3b: Mandatory Testing Tasks
+**Key principle**: Each implementation task writes AND tests its own code. Never defer unit tests to a separate task — the agent that writes the code must also prove it works. This ensures broken code is caught immediately, not 3 tasks later by a different agent.
 
-Every feature MUST include testing tasks. Tests are the agent's feedback loop to verify implementation correctness.
+## Step 3b: Mandatory Testing
 
-### Testing Task Requirements
+Every implementation task MUST include unit tests for the code it creates. Tests are the agent's feedback loop — they verify correctness at the point of creation, not after the fact.
 
-Each implementation task should specify which tests to run for verification. Additionally, create dedicated testing tasks:
+### The Rule: Write Code → Write Tests → Run Tests → Close Task
 
-1. **Unit test task(s)**: Write and run tests for individual components
-   - Reference specific test IDs from the test spec (e.g., V1-U01, V1-U02)
-   - Include the pytest/vitest command to run
+Each implementation task must:
+1. Write the implementation code
+2. Write unit tests for that code (referencing test IDs from the test spec)
+3. Run the tests and verify they pass
+4. Only then close the task
 
-2. **Integration/E2E verification task** (MUST be the final task): Verify the feature works end-to-end
+**Do NOT create separate "write unit tests" tasks.** Unit tests belong with the code they test. The agent that writes a service function is the best agent to test it — it has full context.
+
+**Dedicated test tasks are only for**:
+- Integration tests that span multiple components (written after all components exist)
+- The E2E verification task (always the final task)
+
+### Integration/E2E Verification Task
+
+The **final task** of every feature is the E2E verification task. This is the only dedicated test task:
    - Gates feature completion
    - The task description MUST say: `Read prompt/e2e_verification.txt for instructions.`
    - List the parent feature ID so the execution agent can cross-check
@@ -173,23 +179,24 @@ bd create --title="[Action] [Thing]" --type=task --priority=2 --parent=<feature-
 - [ ] [Specific verifiable criterion]
 - [ ] [Another criterion]
 
+## Unit Tests (MANDATORY for implementation tasks)
+Write unit tests for the code created in this task:
+- Test IDs: [specific test IDs from the spec, e.g., V1-U01, V1-U02]
+- Test file: [path to test file, e.g., `backend/tests/unit/test_video_schema.py`]
+
 ## Verification
-
-### Tests to Write
-[If this task includes writing tests, specify which test IDs from the spec]
-
-### Tests to Run
 ```bash
-[Exact command to run tests, e.g.: cd backend && pytest tests/unit/test_video.py -v]
+[Exact command to run tests, e.g.: docker compose exec backend pytest tests/unit/test_video_schema.py -v]
 ```
 Expected: [What success looks like, e.g., "All 4 tests pass"]
 
 ### Verification Loop
 The agent must:
 1. Implement the code
-2. Run the tests specified above
-3. If tests fail: fix and re-run
-4. Only mark task complete when tests pass
+2. Write unit tests for the code
+3. Run the tests
+4. If tests fail: fix and re-run
+5. Only mark task complete when tests pass
 ```
 
 ## Step 5: Set Up Dependencies
@@ -220,6 +227,7 @@ Before closing this task, verify:
 - [ ] Task count is reasonable (3-8 tasks typical)
 - [ ] Each task modifies 1-3 files
 - [ ] Each task has ONE clear deliverable
+- [ ] Each implementation task includes unit tests for the code it creates (not deferred to a separate task)
 - [ ] Each task includes specific test commands to run
 - [ ] Final task is E2E verification task with `Read prompt/e2e_verification.txt for instructions.`
 - [ ] E2E task lists the parent feature ID and all test IDs from the feature's Testing Requirements
@@ -241,11 +249,12 @@ Run `bd show <feature-id>` to see all children and verify the structure.
 7. **Forgetting cross-feature E2E**: Check if this feature unlocks any E2E scenarios
 8. **Tests written but not run**: Tests are a feedback loop - agents must run them
 9. **Reinterpreting parent E2E scope**: If the parent feature lists "E2E-01 (steps 1-5)", do NOT look at the full E2E-01 (12 steps) and conclude it requires other features. The parent already scoped it — carry it forward verbatim.
+10. **Deferring unit tests to a separate task**: The agent that writes the code must also test it. A separate "write tests" task creates a gap where broken code goes undetected for multiple tasks. Unit tests belong with the implementation.
 
 ## Example: Video Upload API Feature
 
 ```bash
-# Task 1: Database model
+# Task 1: Database model + migration
 bd create --title="Create Video database model" --type=task --parent=beads-feat-002 \
   --description="## Objective
 Create the Video SQLAlchemy model for storing video metadata.
@@ -269,25 +278,68 @@ Use SQLAlchemy 2.0 style with mapped_column.
 
 ## Verification
 \`\`\`bash
-cd backend && alembic revision --autogenerate -m 'add video model'
-cd backend && alembic upgrade head
+docker compose exec backend alembic revision --autogenerate -m 'add video model'
+docker compose exec backend alembic upgrade head
 \`\`\`
 Expected: Migration generates and applies without errors"
 # Returns: beads-task-101
 
-# Task 2: Pydantic schemas
-bd create --title="Create Video Pydantic schemas" --type=task --parent=beads-feat-002 \
-  --description="..."
+# Task 2: Pydantic schemas + schema unit tests
+bd create --title="Create Video schemas with unit tests" --type=task --parent=beads-feat-002 \
+  --description="## Objective
+Create Pydantic schemas for video create/response and write unit tests.
+
+## Files to Modify
+- \`backend/app/schemas/video.py\` - VideoCreate, VideoResponse schemas
+- \`backend/tests/unit/test_video_schema.py\` - Schema validation tests
+
+## Unit Tests (MANDATORY)
+- V1-U01: test_video_schema_validation
+- V1-U03: test_video_metadata_required_fields
+- V1-U04: test_participants_array_parsing
+- V3-U01: test_status_enum_values
+
+## Verification
+\`\`\`bash
+docker compose exec backend pytest tests/unit/test_video_schema.py -v
+\`\`\`
+Expected: All 4 test IDs pass"
 # Returns: beads-task-102
 
-# Task 3: Video service
-bd create --title="Implement Video service" --type=task --parent=beads-feat-002 \
-  --description="..."
+# Task 3: Video service + service unit tests
+bd create --title="Implement Video service with unit tests" --type=task --parent=beads-feat-002 \
+  --description="## Objective
+Implement video CRUD service and write unit tests for service functions.
+
+## Unit Tests (MANDATORY)
+- V1-U02: test_video_file_extension_validation
+- V3-U02: test_status_transition_validation
+
+## Verification
+\`\`\`bash
+docker compose exec backend pytest tests/unit/test_video_schema.py tests/unit/test_video_service.py -v
+\`\`\`
+Expected: All tests pass including new service tests"
 # Returns: beads-task-103
 
-# Task 4: API endpoints
-bd create --title="Create Video API endpoints" --type=task --parent=beads-feat-002 \
-  --description="..."
+# Task 4: API endpoints + integration tests
+bd create --title="Create Video API endpoints with integration tests" --type=task --parent=beads-feat-002 \
+  --description="## Objective
+Create upload, list, detail, and status API endpoints with integration tests.
+
+## Unit Tests (MANDATORY)
+- V1-I01: test_upload_creates_video_record
+- V1-I02: test_upload_stores_file
+- V1-I03: test_upload_triggers_processing_task
+- V1-I04: test_upload_returns_video_id
+- V3-I02: test_status_endpoint_returns_current
+- V3-I03: test_error_status_with_message
+
+## Verification
+\`\`\`bash
+docker compose exec backend pytest tests/integration/test_video_api.py -v
+\`\`\`
+Expected: All 6 integration tests pass"
 # Returns: beads-task-104
 
 # Task 5: E2E Verification (FINAL TASK)
@@ -310,8 +362,7 @@ Feature ID: beads-feat-002
 
 ## Tests to Run
 \`\`\`bash
-docker compose exec backend pytest tests/unit/test_video_schema.py -v
-docker compose exec backend pytest tests/integration/test_video_api.py -v
+docker compose exec backend pytest tests/ -v
 docker compose exec frontend npm test
 \`\`\`"
 # Returns: beads-task-105
@@ -320,7 +371,7 @@ docker compose exec frontend npm test
 bd dep add beads-task-101 <this-plan-task-id>  # First task waits for planning
 bd dep add beads-task-102 beads-task-101       # Schemas after model
 bd dep add beads-task-103 beads-task-102       # Service after schemas
-bd dep add beads-task-104 beads-task-103       # API after service
+bd dep add beads-task-104 beads-task-103       # API + integration tests after service
 bd dep add beads-task-105 beads-task-104       # E2E verification last
 ```
 

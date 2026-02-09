@@ -60,9 +60,10 @@ services:
   # ============================================
 
   backend:
+    image: whedifaqaui-backend:phase1-deps
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile.worker
     environment:
       - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200
@@ -86,9 +87,10 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   worker:
+    image: whedifaqaui-backend:phase1-deps
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/Dockerfile.worker
     environment:
       - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200
