@@ -6,6 +6,13 @@ celery_app = Celery(
     "whedifaqaui",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.REDIS_URL,
+    include=[
+        "app.tasks.ping",
+        "app.tasks.video_processing",
+        "app.tasks.transcription",
+        "app.tasks.chunking",
+        "app.tasks.indexing",
+    ],
 )
 
 celery_app.conf.update(
@@ -18,6 +25,3 @@ celery_app.conf.update(
     task_time_limit=3600,  # 1 hour max per task
     worker_prefetch_multiplier=1,  # For long-running tasks
 )
-
-# Auto-discover tasks in app.tasks package
-celery_app.autodiscover_tasks(["app.tasks"])
