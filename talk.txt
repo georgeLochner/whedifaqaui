@@ -1,0 +1,15 @@
+wdfaw
+    what are we trying to build
+
+
+Importance of the cache
+    Claude.md optimization
+
+
+run_claude_agent
+    activity detector
+
+
+analysis of output to improve prompts
+    both coordinator and coder logs are useful
+    for subsequent analysis by opus
