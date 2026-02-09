@@ -7,6 +7,29 @@ logger = logging.getLogger(__name__)
 _whisperx_model = None
 
 
+def _patch_torch_load():
+    """Patch torch.load for PyTorch 2.6+ compatibility with WhisperX/pyannote models.
+
+    PyTorch 2.6 changed torch.load to default weights_only=True, which breaks
+    loading pyannote and other models that use pickle-based serialization.
+    """
+    import functools
+
+    import torch
+
+    if not hasattr(torch.load, "_patched_for_whisperx"):
+        _original_torch_load = torch.load
+
+        @functools.wraps(_original_torch_load)
+        def _patched_load(*args, **kwargs):
+            if kwargs.get("weights_only") is None:
+                kwargs["weights_only"] = False
+            return _original_torch_load(*args, **kwargs)
+
+        _patched_load._patched_for_whisperx = True
+        torch.load = _patched_load
+
+
 def load_whisperx_model(
     device: str = "cpu", compute_type: str = "int8"
 ):
@@ -15,6 +38,7 @@ def load_whisperx_model(
     if _whisperx_model is not None:
         return _whisperx_model
 
+    _patch_torch_load()
     import whisperx
 
     model_name = os.environ.get("WHISPER_MODEL", "medium")
