@@ -4,25 +4,6 @@ You are a coordinator that assigns beads tasks to coding agents. You run a loop:
 
 **Key principle**: One task at a time. Never run parallel agents.
 
-## Coordinator State
-
-Track these values across the loop. Update after each iteration:
-
-- **FEATURE_ID**: Current feature being worked on
-- **FEATURE_TASKS_TOTAL**: Total number of child tasks in the feature
-- **FEATURE_TASKS_CLOSED**: Number of child tasks closed so far
-- **LAST_SESSION_ID**: Session ID from most recent successful agent run (invalid after kills/errors)
-- **LAST_FREE_SPACE**: Free space percentage from most recent successful run (invalid after kills/errors)
-- **TASK_ATTEMPTS**: Track retry count per task (reset on success)
-- **STALE_CHECKS**: Consecutive monitoring cycles with no new central log activity (reset on new activity)
-
-Initialize these by reading the feature with `bd show <feature-id>` at the start. After that, maintain them from agent output — don't re-read the full feature description each iteration.
-
-**Long sessions**: If running many tasks, periodically write state to `logs/coordinator_state.txt` so it can be recovered if context is compacted:
-```bash
-echo "FEATURE_ID=<id> TOTAL=<n> CLOSED=<n> SESSION=<id> FREE=<pct>" > logs/coordinator_state.txt
-```
-
 ## Finding Work
 
 ```bash
@@ -34,36 +15,15 @@ This shows tasks that are ready (not blocked). Prefer tasks in order of:
 2. Tasks within the current feature (enables session reuse)
 3. Earlier tasks (lower IDs typically come first in dependency chain)
 
-## Feature Transitions
-
-When `bd ready` returns a task from a **different feature** than FEATURE_ID:
-
-1. Read the new feature: `bd show <new-feature-id>`
-2. Reset state: FEATURE_ID, FEATURE_TASKS_TOTAL, FEATURE_TASKS_CLOSED
-3. Clear: LAST_SESSION_ID, LAST_FREE_SPACE (session reuse does not cross features)
-4. Clear: TASK_ATTEMPTS
-
 ## Assigning a Task
 
 ### Step 1: Prepare logging directory
-
-Run this command and **note the path from the output**. Use this literal path in all subsequent commands for this task.
-
 ```bash
-echo "logs/run/$(date +%s)_<task-id>" | tee >(xargs mkdir -p)
+mkdir -p logs/run/{unix_timestamp}_{task_id}
 ```
 
-The output (e.g., `logs/run/1770664074_w-csa.5`) is the log directory path. Use this exact string — not a shell variable — in Step 3 and monitoring commands.
-
-### Step 2: Check for uncommitted changes (when needed)
-
-Check git status **only when**:
-- Starting the first task of a session
-- Retrying a failed task
-- After killing an agent (it may have committed partial work)
-
-Between consecutive successful tasks, agents commit their own work. Skip this step.
-
+### Step 2: Check for uncommitted changes from previous attempts
+Before assigning a previously-attempted task, check if there are uncommitted changes:
 ```bash
 git status
 git stash list
@@ -72,36 +32,29 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 
 ### Step 3: Run the coding agent
 
-**Always run the script as a background task** using the Bash tool's `run_in_background` parameter. This gives you control to monitor progress. The Bash tool returns a `task_id` you will use in Step 4.
-
-In all examples below, substitute the literal log directory path from Step 1 for `<log-dir>`.
-
 **New agent, first task of feature:**
 ```bash
-# Use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
 **New agent, continuing partial feature (some tasks already closed):**
 ```bash
-# Use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
-**Resumed session (same feature, previous task succeeded, LAST_FREE_SPACE > 35%):**
+**Resumed session (same feature, previous task succeeded, free_space > 35%):**
 ```bash
-# Use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "Complete task <task-id> in feature <feature-id>. Exit after completion." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --resume <session_id>
@@ -109,84 +62,42 @@ In all examples below, substitute the literal log directory path from Step 1 for
 
 Do not use extended thinking for initial attempts.
 
-### Step 4: Monitor and wait
+**Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
-Use `TaskOutput` as your timer. Call it with a **3-minute timeout** (180000ms). It either returns the result (agent finished) or times out (agent still running). On timeout, check the central log, then loop.
-
-Reset STALE_CHECKS to 0 when starting a new task.
-
-```
-Loop:
-  1. TaskOutput(task_id, block=true, timeout=180000)
-  2. If completed → go to Step 5
-  3. If timeout → check central log:
-       tail -20 logs/coder-<feature-id>.log
-  4. Analyze the log output (see table below)
-  5. Update STALE_CHECKS
-  6. Go to step 1
-```
-
-Use **cycle counting** to judge staleness (each cycle ≈ 3 minutes). Do not try to parse timestamps from the log.
-
-| Log shows | STALE_CHECKS | Action |
-|-----------|--------------|--------|
-| New tool calls or messages since last check | Reset to 0 | Continue waiting |
-| Last entry describes a slow operation (pip install, model loading, transcription, docker build) | Reset to 0 | Continue waiting — these are expected |
-| No new entries, but same as last check | Increment by 1 | See thresholds below |
-
-| STALE_CHECKS | Meaning | Action |
-|--------------|---------|--------|
-| 1 | 3 min without activity | Continue — may be a brief pause |
-| 2 | ~6 min without activity | Check process: `ps -p $(cat <log-dir>/agent.pid) -o pid,etime,%cpu` |
-| 3 | ~9 min without activity | Check process again; review last log entry for clues |
-| 4+ | ~12+ min without activity | Likely stuck. Kill agent: `kill $(cat <log-dir>/agent.pid)` |
-
-**Exception**: If the last log entry before the gap describes a known slow operation (transcription, model loading, dependency installation), extend patience to **STALE_CHECKS = 8** (~24 min) before killing.
-
-### Step 5: Capture output
-
-Read the result from `TaskOutput` (if the agent finished normally) or from the output file (if you killed the agent).
-
-**On normal completion**, the output includes:
+### Step 4: Wait for completion
+The script will block until the agent exits. Capture the output which includes:
 ```
 session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c
 free_space: 173.9k (87.0%)
 ```
-Update LAST_SESSION_ID and LAST_FREE_SPACE from this output.
-
-**After killing an agent or receiving a script error (exit code 2 or 3)**: the output will NOT contain session_id or free_space. Set both LAST_SESSION_ID and LAST_FREE_SPACE to invalid. Do not attempt session reuse for the next task.
 
 ## Determining Success
 
-If the agent output explicitly reports task completion with session_id and free_space, the task succeeded. Update your state and proceed to "Handling Success".
-
-If the agent output is ambiguous, you killed the agent, or no output was captured, check the task status:
+After the agent finishes:
 ```bash
 bd show <task-id>
 ```
 
 | Status | Meaning | Next Action |
 |--------|---------|-------------|
-| `closed` | Task completed successfully | Handle success |
+| `closed` | Task completed successfully | Find next task |
 | `in_progress` | Agent failed to complete | Handle failure (see below) |
 | `blocked` | Agent filed a blocking issue | Handle blocker (see below) |
 
 ## Handling Success
 
-1. Increment FEATURE_TASKS_CLOSED. If it equals FEATURE_TASKS_TOTAL, close the feature:
+1. Check if this was the last task in the feature:
+   ```bash
+   bd show <feature-id>
+   ```
+   If all child tasks are closed, close the feature:
    ```bash
    bd close <feature-id>
    ```
 
-   If uncertain about the count, verify by checking the children:
-   ```bash
-   bd show <feature-id> | grep "↳"
-   ```
-   All children should show `closed`. Do not close a feature if any child is still open.
-
 2. Decide whether to reuse session for next task:
    - Same feature?
-   - LAST_FREE_SPACE > 35%? (must be valid — not after a kill/error)
+   - free_space > 35%?
    - Previous task succeeded?
 
    If all yes → reuse session. Otherwise → new agent.
@@ -197,17 +108,16 @@ bd show <task-id>
 
 ### Task is now blocked by a new issue
 
-The agent discovered a blocker and filed it. The blocking issue is a **standalone issue** — it is NOT a child of the feature. Do not count it in FEATURE_TASKS_TOTAL or FEATURE_TASKS_CLOSED.
+The agent discovered a blocker and filed it. The blocking issue must be resolved first.
 
 ```bash
 # Check what's blocking
 bd show <task-id>
 
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
-# Create log dir (note the path from output), then use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{blocking_task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
@@ -215,29 +125,9 @@ bd show <task-id>
 
 After the blocker is resolved, the original task will become ready again.
 
-### Agent was killed by coordinator
+### Task still in_progress (agent failed without filing blocker)
 
-If you killed the agent (STALE_CHECKS exceeded threshold), the task remains `in_progress`. Check for partial work:
-```bash
-git status                   # Check for uncommitted changes
-git log --oneline -5        # Check for partial commits
-bd show <task-id>           # Check for notes
-```
-
-Retry with a fresh agent. Include context about the kill in the prompt:
-```bash
-# Create log dir (note the path from output), then use Bash tool with run_in_background=true
-./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. The previous agent was killed due to inactivity - check git log and git status for any partial progress. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
-  --central-log logs/coder-<feature-id>.log \
-  --model opus \
-  --extended-thinking 10000
-```
-
-### Task still in_progress (agent exited without completing)
-
-Check LAST_FREE_SPACE from the agent's output (only valid if the script exited normally with code 0).
+First, check the agent's output for `free_space` value.
 
 **Context exhausted (free_space < 10%):**
 
@@ -250,22 +140,20 @@ git log --oneline -5        # Check for partial commits
 
 Assign fresh agent (no extended thinking - context was the issue, not difficulty):
 ```bash
-# Create log dir (note the path from output), then use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
 
-**Other failure (free_space adequate or unknown):**
+**Other failure (free_space adequate):**
 
 The agent failed for a non-context reason. Use extended thinking to help debug:
 ```bash
-# Create log dir (note the path from output), then use Bash tool with run_in_background=true
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir <log-dir> \
+  --output-dir logs/run/{unix_timestamp}_{task_id} \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
@@ -273,7 +161,7 @@ The agent failed for a non-context reason. Use extended thinking to help debug:
 
 ### Retry limits
 
-Track attempts per task in TASK_ATTEMPTS. If a task fails **3 times**:
+Track how many times a task has been attempted. If a task fails **3 times**:
 1. Add a note to the task describing the failures
 2. Check if the task should be split into smaller tasks
 3. If unsure how to proceed, stop the loop and report the situation
@@ -282,15 +170,10 @@ Do not infinitely retry failing tasks.
 
 ### Script failure (run_claude_agent.sh exits with error)
 
-| Exit Code | Meaning | Action |
-|-----------|---------|--------|
-| 2 | Max runtime safety limit hit | Retry once; if repeated, task may be too large |
-| 3 | Agent crashed or returned error | Check logs, retry with extended thinking |
-| 4 | Invalid arguments | Fix the command and retry |
-
-After any script error, LAST_SESSION_ID and LAST_FREE_SPACE are invalid. Start a fresh session for the next attempt.
-
-For transient issues (network, resource) → retry once. If persistent → stop the loop and report.
+If the script itself fails (not the agent):
+1. Check the error message
+2. Check if it's a transient issue (network, resource) → retry once
+3. If persistent → stop the loop and report the error
 
 ## Session Reuse Rules
 
@@ -298,10 +181,9 @@ Reuse an existing session when ALL conditions are met:
 
 | Condition | How to Check |
 |-----------|--------------|
-| Previous task succeeded | Agent output reported completion (not killed/errored) |
-| LAST_SESSION_ID is valid | Not invalidated by a kill or script error |
-| Enough context remaining | LAST_FREE_SPACE > 35% |
-| Same feature | Next task has same FEATURE_ID |
+| Previous task succeeded | `bd show <previous-task>` shows `closed` |
+| Enough context remaining | Agent output shows `free_space > 35%` |
+| Same feature | Next task has same feature-id as previous |
 
 When reusing, the agent already has:
 - The coding_agent_prompt.txt instructions
@@ -312,47 +194,39 @@ So the prompt can be minimal.
 
 ## Feature Completion
 
-Track FEATURE_TASKS_CLOSED vs FEATURE_TASKS_TOTAL. When they match, close the feature:
+A feature is complete when all its child tasks are closed. Check with:
+```bash
+bd show <feature-id>
+```
+
+Look at the children list. If all show `closed`, close the feature:
 ```bash
 bd close <feature-id>
 ```
 
-If uncertain, verify by checking the children list:
-```bash
-bd show <feature-id> | grep "↳"
-```
-All children should show `closed`. Do not close a feature if any child is still open, in_progress, or blocked.
-
-**Note**: Blocker issues filed by agents are standalone issues, not feature children. They do not affect FEATURE_TASKS_TOTAL or FEATURE_TASKS_CLOSED.
+Do not close a feature if any child task is still open, in_progress, or blocked.
 
 ## Complete Loop Summary
 
 ```
-1. bd ready                              # Find available task
-2. Check if new feature → reset state    # See "Feature Transitions"
-3. Create log dir (note literal path)    # Step 1
-4. Check git status                      # Only for first task, retries, or post-kill
-5. Launch agent (run_in_background=true) # Step 3 → get task_id
-6. Monitor loop:                         # Step 4
-   a. TaskOutput(task_id, timeout=180000)
-   b. If completed → exit loop
-   c. If timeout → tail central log
-   d. Update STALE_CHECKS → continue or kill
-7. Capture session_id, free_space        # Step 5 (invalid after kill/error)
-8. If closed:
-   a. Increment FEATURE_TASKS_CLOSED
-   b. If feature complete → bd close <feature-id>
-   c. Decide session reuse
-   d. Go to step 1
-9. If blocked:
-   a. Assign blocking issue (not counted in feature totals)
+1. bd ready                          # Find available task
+2. Check git status                  # Look for uncommitted changes
+3. Assign task to agent              # New or resumed session
+4. Wait for agent to exit
+5. bd show <task-id>                 # Check result
+6. If closed:
+   a. Check if feature complete → close if so
+   b. Decide session reuse
+   c. Go to step 1
+7. If blocked:
+   a. Assign blocking issue
    b. After resolved, original task becomes ready
    c. Go to step 1
-10. If in_progress (failed or killed):
-    a. Increment TASK_ATTEMPTS[task-id]
-    b. Retry with appropriate strategy
-    c. Go to step 1
-11. If no ready tasks remain → stop
+8. If in_progress (failed):
+   a. Check free_space and attempt count
+   b. Retry with appropriate strategy
+   c. Go to step 1
+9. If no ready tasks remain → done
 ```
 
 ## Exit Conditions
@@ -363,9 +237,4 @@ Stop the loop when:
 - The script itself fails persistently
 - You encounter a scenario not covered by these instructions
 
-## Stopping the Loop
-
-When stopping, always:
-1. Output a summary of what was completed and what remains
-2. Run `bd sync --from-main`
-3. Commit any uncommitted changes
+When stopping, output a summary of what was completed and what remains.
