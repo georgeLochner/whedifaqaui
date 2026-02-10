@@ -62,7 +62,15 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
   --resume <session_id>
 ```
 
-Do not use extended thinking for initial attempts.
+**When to use extended thinking (`--extended-thinking 10000`):**
+- Discovered blockers (already covered above)
+- Non-context retry failures (already covered below)
+- E2E verification or integration tasks — these commonly uncover real bugs
+- Tasks that touch infrastructure (Docker, Celery config, dependency management)
+
+**Do not use extended thinking for:**
+- Initial attempts at straightforward implementation tasks
+- Context exhaustion retries (context was the issue, not difficulty)
 
 **Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
