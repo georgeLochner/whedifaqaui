@@ -46,7 +46,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 **New agent, continuing partial feature (some tasks already closed):**
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
+  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus
@@ -90,9 +90,9 @@ bd show <task-id>
 
 1. Check if this was the last task in the feature:
    ```bash
-   bd show <feature-id>
+   bd list | grep '\[task\]' | grep <feature-id>
    ```
-   If all child tasks are closed, close the feature:
+   If every line shows `closed`, close the feature. If no output, something is wrong — do not close.
    ```bash
    bd close <feature-id>
    ```
@@ -118,7 +118,7 @@ bd show <task-id>
 
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
@@ -143,7 +143,7 @@ git log --oneline -5        # Check for partial commits
 Assign fresh agent (no extended thinking - context was the issue, not difficulty):
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus
@@ -154,7 +154,7 @@ Assign fresh agent (no extended thinking - context was the issue, not difficulty
 The agent failed for a non-context reason. Use extended thinking to help debug:
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
@@ -198,10 +198,10 @@ So the prompt can be minimal.
 
 A feature is complete when all its child tasks are closed. Check with:
 ```bash
-bd show <feature-id>
+bd list | grep '\[task\]' | grep <feature-id>
 ```
 
-Look at the children list. If all show `closed`, close the feature:
+If every line shows `closed`, close the feature. If no output, something is wrong — do not close.
 ```bash
 bd close <feature-id>
 ```

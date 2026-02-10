@@ -93,9 +93,12 @@ Before closing, ask yourself: **Did I take any shortcuts I know are suboptimal?*
 
 If yes: Either fix them now, or create a follow-up task to track the technical debt.
 
-Only close when fully done (code works, tests pass, changes committed, no untracked shortcuts):
+Only close when fully done (code works, tests pass, no untracked shortcuts).
+Close the task and commit code + beads together in a single commit:
 ```bash
 bd close <task-id>
+git add <code files> .beads/
+git commit -m "Implement <description> (<task-id>)"
 ```
 
 ---
