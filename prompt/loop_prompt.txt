@@ -67,11 +67,13 @@ Do not use extended thinking for initial attempts.
 **Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
 ### Step 4: Wait for completion
-The script will block until the agent exits. Capture the output which includes:
+The script will block until the agent exits. The last lines of stdout contain:
 ```
+---
 session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c
 free_space: 173.9k (87.0%)
 ```
+Parse the `session_id` (needed for `--resume`) and `free_space` percentage (needed for session reuse decisions).
 
 ## Determining Success
 
