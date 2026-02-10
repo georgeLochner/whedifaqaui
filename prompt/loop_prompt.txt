@@ -74,8 +74,33 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 
 **Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
-### Step 4: Wait for completion
-The script will block until the agent exits. The last lines of stdout contain:
+### Step 4: Monitor and wait for completion
+
+Run the script as a **background** bash command so you can monitor the agent.
+
+Poll every 1-2 minutes. Each poll:
+```bash
+# Seconds since agent last produced output
+echo $(( $(date +%s) - $(stat -c %Y $RUNDIR/verbose.jsonl) ))
+
+# What the agent is doing
+tail -5 logs/coder-<feature-id>.log
+```
+
+**Decision criteria:**
+| Observation | Action |
+|-------------|--------|
+| Recent activity, agent working normally | Keep waiting |
+| Agent running a known slow operation (pip install, transcription, model download) | Keep waiting |
+| No new output for 10+ minutes and no slow operation visible | Kill: `kill $(cat $RUNDIR/agent.pid)` |
+| Agent repeating the same failing action | Kill: `kill $(cat $RUNDIR/agent.pid)` |
+
+When the agent finishes (or is killed), read the result:
+```bash
+cat $RUNDIR/result.txt
+```
+
+The last lines contain:
 ```
 ---
 session_id: 4001e6f9-30be-4b0b-8e59-dddee1d6427c

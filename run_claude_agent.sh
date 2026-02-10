@@ -12,7 +12,7 @@ set -euo pipefail
 MODEL="opus"
 RESUME=""
 EXTENDED_THINKING=""
-MAX_RUNTIME=3600
+MAX_RUNTIME=7200
 SKIP_PERMISSIONS=true
 CENTRAL_LOG=""  # Optional central log file for all agent runs
 
@@ -29,7 +29,7 @@ Optional:
     --resume ID            Resume a previous conversation by session ID
     --model MODEL          Model to use (sonnet|opus|haiku) [default: opus]
     --extended-thinking N  Enable extended thinking with N tokens
-    --max-runtime N        Hard safety limit in seconds [default: 3600]
+    --max-runtime N        Hard safety limit in seconds [default: 7200]
     --central-log FILE     Append parsed activity to central log file (optional)
     --skip-permissions     Add --dangerously-skip-permissions flag [default: true]
     --no-skip-permissions  Require permission prompts (disable skip-permissions)
@@ -235,8 +235,9 @@ if [[ -n "$CENTRAL_LOG" ]]; then
 fi
 
 # Max runtime safety watchdog (background)
-# This is a last-resort circuit breaker, not operational monitoring.
-# The coordinator monitors agent progress via the central log.
+# Last-resort circuit breaker only. The coordinator is the primary monitor,
+# polling the central log for activity. This cap should be set high enough
+# that the coordinator's idle detection always triggers first.
 (
     sleep "$MAX_RUNTIME"
     if kill -0 "$AGENT_PID" 2>/dev/null; then
