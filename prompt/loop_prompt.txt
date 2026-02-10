@@ -110,9 +110,11 @@ Parse the `session_id` (needed for `--resume`) and `free_space` percentage (need
 
 ## Determining Success
 
-After the agent finishes:
+After the agent finishes, check the task status:
 ```bash
-bd show <task-id>
+bd list | grep <task-id>
+# Output example: w-csa.5 [P2] [task] closed - Create chunking and indexing Celery tasks
+#                                      ^^^^^^ status is here
 ```
 
 | Status | Meaning | Next Action |
@@ -164,32 +166,18 @@ After the blocker is resolved, the original task will become ready again.
 
 ### Task still in_progress (agent failed without filing blocker)
 
-First, check the agent's output for `free_space` value.
+The agent crashed, ran out of context, or was killed. It will not have left handoff notes.
 
-**Context exhausted (free_space < 10%):**
-
-The agent ran out of context. Check for handoff notes and uncommitted work:
+Check for uncommitted work:
 ```bash
-bd show <task-id>           # Check for handoff notes in description
-git status                   # Check for uncommitted changes
-git log --oneline -5        # Check for partial commits
+git status
+git log --oneline -5
 ```
 
-Assign fresh agent (no extended thinking - context was the issue, not difficulty):
+Use extended thinking since retries are harder:
 ```bash
 ./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir $RUNDIR \
-  --central-log logs/coder-<feature-id>.log \
-  --model opus
-```
-
-**Other failure (free_space adequate):**
-
-The agent failed for a non-context reason. Use extended thinking to help debug:
-```bash
-./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
+  --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent failed - check git status and git log for partial progress, and run tail -20 logs/coder-<feature-id>.log to see what it was doing before it stopped. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
