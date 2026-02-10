@@ -18,9 +18,11 @@ This shows tasks that are ready (not blocked). Prefer tasks in order of:
 ## Assigning a Task
 
 ### Step 1: Prepare logging directory
+Capture the timestamp once and reuse it for both mkdir and --output-dir:
 ```bash
-mkdir -p logs/run/{unix_timestamp}_{task_id}
+RUNDIR=logs/run/$(date +%s)_{task_id} && mkdir -p $RUNDIR
 ```
+Use `$RUNDIR` as the `--output-dir` value in all subsequent commands.
 
 ### Step 2: Check for uncommitted changes from previous attempts
 Before assigning a previously-attempted task, check if there are uncommitted changes:
@@ -36,7 +38,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{unix_timestamp}_{task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
@@ -45,7 +47,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature to understand what's already built. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{unix_timestamp}_{task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
@@ -54,7 +56,7 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 ```bash
 ./run_claude_agent.sh \
   --prompt "Complete task <task-id> in feature <feature-id>. Exit after completion." \
-  --output-dir logs/run/{unix_timestamp}_{task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --resume <session_id>
@@ -117,7 +119,7 @@ bd show <task-id>
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <blocking-task-id>). Review completed tasks in the feature. This issue was discovered while attempting another task. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{unix_timestamp}_{blocking_task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
@@ -142,7 +144,7 @@ Assign fresh agent (no extended thinking - context was the issue, not difficulty
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent ran out of context - check task notes for handoff and git log for progress. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{unix_timestamp}_{task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus
 ```
@@ -153,7 +155,7 @@ The agent failed for a non-context reason. Use extended thinking to help debug:
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Review completed tasks in the feature. A previous agent failed - check task notes, git log, and git status. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir logs/run/{unix_timestamp}_{task_id} \
+  --output-dir $RUNDIR \
   --central-log logs/coder-<feature-id>.log \
   --model opus \
   --extended-thinking 10000
