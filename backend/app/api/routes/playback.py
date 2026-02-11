@@ -81,6 +81,33 @@ def stream_video(
     )
 
 
+@router.get("/{video_id}/thumbnail")
+def get_thumbnail(
+    video_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Serve the thumbnail image for a video."""
+    video = db.query(Video).filter(Video.id == video_id).first()
+    if video is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if not video.thumbnail_path:
+        raise HTTPException(status_code=404, detail="No thumbnail available")
+
+    file_path = video.thumbnail_path
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Thumbnail file not found on disk")
+
+    with open(file_path, "rb") as f:
+        data = f.read()
+
+    return Response(
+        content=data,
+        status_code=200,
+        media_type="image/jpeg",
+        headers={"Content-Length": str(len(data))},
+    )
+
+
 @router.get("/{video_id}/transcript", response_model=TranscriptResponse)
 def get_transcript(
     video_id: UUID,
