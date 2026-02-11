@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { Video } from '../types/video'
+import type { TranscriptResponse } from '../types/transcript'
 
 export interface VideoStatusResponse {
   id: string
@@ -60,6 +61,15 @@ export async function getVideoStatus(
 ): Promise<VideoStatusResponse> {
   const { data } = await apiClient.get<VideoStatusResponse>(
     `/videos/${id}/status`
+  )
+  return data
+}
+
+export async function getTranscript(
+  videoId: string
+): Promise<TranscriptResponse> {
+  const { data } = await apiClient.get<TranscriptResponse>(
+    `/videos/${videoId}/transcript`
   )
   return data
 }
