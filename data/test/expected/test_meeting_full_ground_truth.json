@@ -1,0 +1,258 @@
+{
+  "source": "youtube_transcript",
+  "source_transcript": "test_meeting_full_transcript.txt",
+  "source_file": "test_meeting_full.mkv",
+  "title": "Backdrop CMS Weekly Meeting",
+  "recording_date": "2023-01-05",
+  "duration_seconds": 803,
+  "speaker_count": 7,
+  "speakers": ["Jen Lampton", "Martin", "Robert", "Justin", "Greg", "Luke McCormick", "Tim Erickson"],
+  "note": "Ground truth derived from YouTube transcript (auto-captions). Full 13:23 weekly meeting. The trimmed version (test_meeting_long.mkv, 185s) contains only the introduction round.",
+  "expected_segments_min": 5,
+  "expected_segments_max": 10,
+  "expected_word_count_min": 2000,
+  "transcript_segments": [
+    {
+      "time_range": "0:04 - 0:43",
+      "start_seconds": 4,
+      "end_seconds": 43,
+      "speaker": "Jen Lampton",
+      "text": "okay looks like we're live today is Thursday January 5th 2023. happy New Year everybody this is our first weekly meeting of the new year and post backdrop feature freeze which is pretty exciting um before we get into the agenda we're going to go around to the room and have people do introductions um Nate likes to manage these in a very organized fashion but I like to do them at random to make sure everybody's on their toes uh so we're gonna do popcorn I'll go first a call in the next person um my name is Jen Lampton I'm from Oakland California I'm very excited about all of the features we got into 124 that we're going to talk about later today"
+    },
+    {
+      "time_range": "0:43 - 0:58",
+      "start_seconds": 43,
+      "end_seconds": 58,
+      "speaker": "Martin",
+      "text": "um and I will pass it on to Martin I am Martin and the United Kingdom um I'm a web developer I pass it on to Robert"
+    },
+    {
+      "time_range": "0:58 - 1:13",
+      "start_seconds": 58,
+      "end_seconds": 73,
+      "speaker": "Robert",
+      "text": "Lang I called her on the internet in Altadena California and uh excited about working on contrib modules to get them ready to release at the same time or in response to 1.24"
+    },
+    {
+      "time_range": "1:13 - 1:33",
+      "start_seconds": 73,
+      "end_seconds": 93,
+      "speaker": "Justin",
+      "text": "um and digesting Muncie Indiana and uh I'm here because this is only the second one of these I've ever been to so I'll go next if someone else uh uh so"
+    },
+    {
+      "time_range": "1:33 - 2:09",
+      "start_seconds": 93,
+      "end_seconds": 129,
+      "speaker": "Greg",
+      "text": "I'm Greg I'm I'm usually joining from Australia Melbourne but now I'm joining from Greece um here for uh the the winter Christmas holidays excited about the new release as well been reviewing code that other people have produced over the past few months uh for the the new release and then filing follow-up issues like crazy really excited about the potentials things that we can do uh yes so many things to do and so so many interesting and challenging things uh and with that I'll pass it on to Martin did you go I've already been all right"
+    },
+    {
+      "time_range": "2:09 - 2:27",
+      "start_seconds": 129,
+      "end_seconds": 147,
+      "speaker": "Luke McCormick",
+      "text": "so then look all right I'm Luke McCormick in San Ramon California near San Francisco um web project manager and General get about uh excited about all sorts of things we're doing here and I think Tim's the last one to go right"
+    },
+    {
+      "time_range": "2:34 - 3:05",
+      "start_seconds": 154,
+      "end_seconds": 185,
+      "speaker": "Tim Erickson",
+      "text": "um I definitely haven't went yet I don't know if I'm latched but I'll go now to Tim Erickson St Paul Tim uh just recovering from uh from covet so um probably be a bit quiet today but uh feeling pretty good so I other than a cough and a little you know tired throat I think I'm in good shape uh and great to see the work that happened uh love the the filter the permission filters that's so cool stick that in uh that's it for me"
+    },
+    {
+      "time_range": "3:05 - 4:49",
+      "start_seconds": 185,
+      "end_seconds": 289,
+      "speaker": "Jen Lampton",
+      "text": "um going through the community contributions section I'm going to start with new projects uh in the last week we got two new contrib projects with official releases Administration bar views grouping and enable modules report recipe and I think both of those came from I don't know if they came from but they both were discussed in core issues about things that how how we could improve core and um then there were contrib modules for them and I don't know what the order was but it seems really cool that there's a lot of core development fueling kinship projects for people who need those features which is pretty cool uh for draft blog posts we have two weeks well about two weeks to get a blog post ready for the backdrop 124 release I assigned that um checklist item to myself to go through those um uh new features and make sure they all have that little paragraph at the bottom that's like text for blog posts or whatever some of them already have it thanks to our issue template which is really great but a lot of them don't so I haven't gotten to that yet I'm also starting to add labels for whether they need a translation update or whether they have um need change records and stuff uh I've gotten through like three of them we got a bunch of new issues so um once I get that done I'll add a note on the um checklist issue and other people can start on the blog post and hopefully that'll make it a lot easier to get that written uh I checked today's Forum post but there were no new items in it I'll try it again because I checked it before the last meeting which is I guess good"
+    },
+    {
+      "time_range": "4:49 - 5:30",
+      "start_seconds": 289,
+      "end_seconds": 330,
+      "speaker": "Jen Lampton",
+      "text": "um so if we want to talk about backdrop 124 the features that we got in are the instant search filter on the permissions page that Tim mentioned and that is modeled off of our search box on the modules page it just allows you to hide things with JavaScript to see only exactly what you need um Robert cat a bug with it almost immediately after we added it in it worked on the main permissions Matrix but there was an issue on a permissions page for a single roll we got that caught it fixed it and got that in also so that's great uh turn around on that"
+    },
+    {
+      "time_range": "5:30 - 6:00",
+      "start_seconds": 330,
+      "end_seconds": 360,
+      "speaker": "Jen Lampton",
+      "text": "um we had a core issue to clean up the API for files um that are access checks for all other entities were a little bit different so we just made the access checks for files work more like the access checks for other entities uh I don't think that's going to affect very many people we don't have a bunch of contrib modules to do anything with files because most of our media stuff is already in core um but I do think we should have a change record up in case anyone is using it in a custom module"
+    },
+    {
+      "time_range": "6:00 - 7:07",
+      "start_seconds": 360,
+      "end_seconds": 427,
+      "speaker": "Jen Lampton",
+      "text": "uh and let's see we added descriptions for roles so if you now go to the user roles page you'll see that each role should have a description on it and if you edit a role you have the opportunity to add two different descriptions one of them is the one that shows up there on that description page and then the other one will show up um when you're assigning a role to a person so that it'll allow administrators to have information for themselves in one interface and information for other people that they need to know when they're signing roles in another place um we went back and forth a lot on the text in those and so I would love to have people review that one and make sure that the text will be landed on makes sense um we've got a couple you know some time to clean that up if we don't like the default values that are added um but in general that's going to be really helpful there's also a sort of a secret feature in there where if you're on like a node type form or something and you're trying to assign permissions to someone and you forget what the roles are you can hover over the column heading and it'll have a little title attribute pop-up that'll tell you the description from the roles page which I think is useful too"
+    },
+    {
+      "time_range": "7:07 - 7:43",
+      "start_seconds": 427,
+      "end_seconds": 463,
+      "speaker": "Jen Lampton",
+      "text": "a views field handle Handler for project properties in the database this is so that you can build a view of all of your enabled modules for example and there's a the content project that came out I think leverages this feature which is great um it also sparked another great issue in the court queue about how we manage our project data and so I'm hopeful to see um a big core Improvement uh in 125 based on the work from this issue 124. so that's exciting too"
+    },
+    {
+      "time_range": "7:43 - 8:12",
+      "start_seconds": 463,
+      "end_seconds": 492,
+      "speaker": "Jen Lampton",
+      "text": "uh we added a configuration option for database log messages so this is something that's always bothered me when you go to the log page and you can only see like the first however many characters of your message and you're like oh I wish I could see all of it now you can customize how long you want that length to be so if you want to see 255 characters of message on that page you can or you can make it any link you want so there's now a setting it's a system core setting you can leave it or change it if you want which is great"
+    },
+    {
+      "time_range": "8:12 - 8:55",
+      "start_seconds": 492,
+      "end_seconds": 535,
+      "speaker": "Jen Lampton",
+      "text": "we uh oh this is a good one added a back to site button in the administration bar so when you are on the front end page of your site you go to edit something and you get thrown deep in the bowels of backdrop and then you click around and you want to get back to wherever the heck you were before you can click on the home button and instead of just taking you to the home page of your site it'll take you back to where you were before you went to the back um which is really helpful uh and it doesn't isn't a home icon anymore it says back to site you need Justin yeah that's I think that's going to be a huge uh win that was Justin's first core contribution really or yeah congratulations"
+    },
+    {
+      "time_range": "8:55 - 10:23",
+      "start_seconds": 535,
+      "end_seconds": 623,
+      "speaker": "Jen Lampton",
+      "text": "great job um so and then the last new feature we got in was to add a rebuild search index process so Greg and I did a bunch of work on that search index form when it first went into Bachelor we're like why does this work this way it's so dumb there was a button that said rebuilt search index that did not rebuild your search index so we cleaned up the form to rename the button but me and uh RG piano went through and we're like why don't we just actually make it read about the search index which is what people really wanted um so now there's a nicely batched process that will rebuild your search index for you which is really great so I'm happy to see that um got some attention seven years later whatever it is just really good Doom so those are all the features that we currently have in one 24 zero I would encourage everybody who hasn't tested a preview release which is out now you can get it both from the GitHub repository or on then more ways to try backdrop Pages at the very bottom of the page there you can grab download s give it a test especially these news features make sure you don't find anything weird happening if you can think of strange use cases we might not have tried for stuff that would be great uh we've got a couple weeks to get any changes in too if you don't like the text we're using places or want to improve interfaces or what have you so that's it for 124"
+    },
+    {
+      "time_range": "10:23 - 10:57",
+      "start_seconds": 623,
+      "end_seconds": 657,
+      "speaker": "Jen Lampton / Greg",
+      "text": "um lost my agenda let's see uh well is there anything else anyone wants to bring up today might worth it so many things so many let's just put something in the chat about uh five nine one one which is about how we notify people who are updating using the the UI update that they need to do a manual step"
+    },
+    {
+      "time_range": "10:57 - 12:13",
+      "start_seconds": 657,
+      "end_seconds": 733,
+      "speaker": "Jen Lampton / Greg",
+      "text": "yeah so in this latest version of backdrop quote we did include a change to the HTT access file to support php8 um and so this is one of those rare occasions where we have changed these files outside of the core directory and most people who are updating core manually will probably know to do that but if you're using the user interface it only replaces that core directory and as pointed out would be very nice if we showed something in the user interface to let people know that the other things need to be done um so I think this is a good idea I don't know how we do it yeah it's difficult not to crack um I've been I've been trying to think of ways like one of the biggest problems and why we left we've chosen to to leave these files alone is that people might have customized it according to this them actually to to the sides of the the needs of the sites and there's no way currently to know if they have done so so we don't know if they've customized it and what we have chosen to be doing so far is just to leave them alone yeah I think I think that's the right choice but even in just like how do we tell people that there's a change like"
+    },
+    {
+      "time_range": "12:13 - 13:23",
+      "start_seconds": 733,
+      "end_seconds": 803,
+      "speaker": "Jen Lampton / Greg",
+      "text": "trying to figure out how that setting could be delivered like we might need like a a state variable that would be like notify of you know core files change update or whatever and then when we do an update that has them we could add an update hook that would change the state of that variable and then they would get a little warning on their site somewhere that would say that they need to do it and then once they've read the warning they'll have the option to like dismiss this warning and that would change the state variable back um it's the only thing I can think of because we don't really want us like a permanent a config setting for it because then you might turn it on otherwise so I think um there's a few things there's a few things that I thought with this specific change that triggered this whole discussion if you upgrade your site or like I did my local sites I I changed the default on Lando which was uh 7.4 PHP to eight and then randomly after many weeks I started seeing that certain settings wouldn't take and then Martin jumped in and said"
+    }
+  ],
+  "topic_summary": [
+    {
+      "time_range": "0:04 - 3:05",
+      "start_seconds": 4,
+      "end_seconds": 185,
+      "topic": "Team introductions",
+      "speakers": ["Jen Lampton", "Martin", "Robert", "Justin", "Greg", "Luke McCormick", "Tim Erickson"],
+      "key_phrases": ["January 5th 2023", "feature freeze", "1.24", "Oakland California", "United Kingdom", "Altadena California", "Muncie Indiana", "Australia Melbourne", "Greece", "San Ramon California", "St Paul", "permission filters", "covet"]
+    },
+    {
+      "time_range": "3:05 - 4:49",
+      "start_seconds": 185,
+      "end_seconds": 289,
+      "topic": "Community contributions and blog post preparation",
+      "key_phrases": ["contrib projects", "Administration bar views grouping", "enable modules report recipe", "blog post", "backdrop 124 release", "change records", "translation update", "Forum post"]
+    },
+    {
+      "time_range": "4:49 - 5:30",
+      "start_seconds": 289,
+      "end_seconds": 330,
+      "topic": "Permissions page search filter",
+      "key_phrases": ["instant search filter", "permissions page", "modules page", "JavaScript", "permissions Matrix", "single roll"]
+    },
+    {
+      "time_range": "5:30 - 6:00",
+      "start_seconds": 330,
+      "end_seconds": 360,
+      "topic": "File access API cleanup",
+      "key_phrases": ["API for files", "access checks", "entities", "contrib modules", "media", "change record", "custom module"]
+    },
+    {
+      "time_range": "6:00 - 7:07",
+      "start_seconds": 360,
+      "end_seconds": 427,
+      "topic": "Role descriptions feature",
+      "key_phrases": ["descriptions for roles", "user roles page", "two different descriptions", "assigning a role", "administrators", "title attribute", "hover", "column heading"]
+    },
+    {
+      "time_range": "7:07 - 7:43",
+      "start_seconds": 427,
+      "end_seconds": 463,
+      "topic": "Views field handler for project properties",
+      "key_phrases": ["views field", "project properties", "database", "enabled modules", "content project", "core Improvement", "125"]
+    },
+    {
+      "time_range": "7:43 - 8:12",
+      "start_seconds": 463,
+      "end_seconds": 492,
+      "topic": "Database log message length configuration",
+      "key_phrases": ["configuration option", "database log messages", "characters", "255 characters", "system core setting"]
+    },
+    {
+      "time_range": "8:12 - 8:55",
+      "start_seconds": 492,
+      "end_seconds": 535,
+      "topic": "Back-to-site button in admin bar",
+      "key_phrases": ["back to site button", "administration bar", "home button", "Justin", "first core contribution"]
+    },
+    {
+      "time_range": "8:55 - 10:23",
+      "start_seconds": 535,
+      "end_seconds": 623,
+      "topic": "Search index rebuild and 1.24 wrap-up",
+      "key_phrases": ["rebuild search index", "batched process", "search index form", "preview release", "GitHub repository"]
+    },
+    {
+      "time_range": "10:23 - 13:23",
+      "start_seconds": 623,
+      "end_seconds": 803,
+      "topic": "htaccess changes, PHP 8 support, and UI update notifications",
+      "key_phrases": ["htaccess", "php8", "core directory", "user interface", "manual step", "customized", "state variable", "update hook", "warning", "dismiss", "config setting", "Lando", "7.4 PHP"]
+    }
+  ],
+  "search_verification_queries": {
+    "permission filter": {
+      "expected_match": true,
+      "expected_timestamp_range": [154, 330],
+      "ground_truth_text": "love the the filter the permission filters that's so cool ... instant search filter on the permissions page",
+      "description": "Tim mentions it at 2:34, Jen details it at 4:49-5:30"
+    },
+    "back to site": {
+      "expected_match": true,
+      "expected_timestamp_range": [492, 535],
+      "ground_truth_text": "added a back to site button in the administration bar ... that was Justin's first core contribution",
+      "description": "Jen describes the back-to-site button feature at 8:12-8:55"
+    },
+    "search index rebuild": {
+      "expected_match": true,
+      "expected_timestamp_range": [535, 623],
+      "ground_truth_text": "the last new feature we got in was to add a rebuild search index process ... nicely batched process that will rebuild your search index",
+      "description": "Jen describes the rebuild search index feature at 8:55-10:23"
+    },
+    "htaccess PHP": {
+      "expected_match": true,
+      "expected_timestamp_range": [623, 803],
+      "ground_truth_text": "we did include a change to the HTT access file to support php8",
+      "description": "Discussion about htaccess changes for PHP 8 at 10:57-13:23"
+    },
+    "database log": {
+      "expected_match": true,
+      "expected_timestamp_range": [463, 492],
+      "ground_truth_text": "we added a configuration option for database log messages ... 255 characters of message on that page",
+      "description": "Database log message length configuration at 7:43-8:12"
+    },
+    "role descriptions": {
+      "expected_match": true,
+      "expected_timestamp_range": [360, 427],
+      "ground_truth_text": "we added descriptions for roles ... two different descriptions ... hover over the column heading",
+      "description": "Role descriptions feature at 6:00-7:07"
+    },
+    "quantum computing": {
+      "expected_match": false,
+      "description": "Topic never discussed - used for no-results testing"
+    }
+  },
+  "language": "en"
+}

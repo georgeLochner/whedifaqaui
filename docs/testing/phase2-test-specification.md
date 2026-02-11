@@ -9,10 +9,10 @@
 ## Table of Contents
 
 1. [Test Strategy Overview](#1-test-strategy-overview)
-2. [Test Resources](#2-test-resources)
-3. [Story-by-Story Test Specifications](#3-story-by-story-test-specifications)
-4. [End-to-End Test Scenarios](#4-end-to-end-test-scenarios)
-5. [Playwright Screenshot Verification](#5-playwright-screenshot-verification)
+2. [Test Data Baseline](#2-test-data-baseline)
+3. [Test Resources](#3-test-resources)
+4. [Story-by-Story Test Specifications](#4-story-by-story-test-specifications)
+5. [E2E Verification (MCP Interactive)](#5-e2e-verification-mcp-interactive)
 6. [Test Data Management](#6-test-data-management)
 7. [Success Criteria](#7-success-criteria)
 
@@ -37,8 +37,8 @@ Phase 2 introduces the conversational AI layer with these critical components:
 
 ```
                     ┌─────────────────┐
-                    │   E2E Tests     │  ← Playwright (5-7 critical flows)
-                    │   (Slow, Few)   │
+                    │   MCP E2E       │  ← Interactive browser verification (PRIMARY GATE)
+                    │   (Manual, Few) │
                    ─┼─────────────────┼─
                   / │ Integration     │ \  ← API + Claude + Services (15-20 tests)
                  /  │ Tests           │  \
@@ -54,9 +54,15 @@ Phase 2 introduces the conversational AI layer with these critical components:
 |-------|---------|----------|
 | Unit | pytest | vitest |
 | Integration | pytest + TestClient | vitest + MSW |
-| E2E | pytest (API only) | Playwright |
-| Screenshots | - | Playwright MCP |
+| **E2E (primary)** | - | **Playwright MCP (interactive verification)** |
+| E2E (future automation) | pytest (API only) | Playwright scripted tests |
 | LLM Verification | Claude CLI subprocess | - |
+
+### E2E Verification Strategy
+
+**Playwright MCP is the primary E2E gate.** Interactive browser verification against the live running system catches issues that automated DOM assertions miss — layout problems, video playback, real Claude responses, actual search results.
+
+Automated Playwright test scripts (`e2e/phase2.spec.ts`) may be added later for regression automation once functionality is verified and stable.
 
 ### Claude Wrapper Testing Strategy
 
@@ -64,44 +70,149 @@ The Claude Wrapper Module (`services/claude.py`) is the most critical component.
 
 1. **Unit Tests**: Test command construction, response parsing, error handling (with mocked subprocess)
 2. **Integration Tests**: Test actual CLI invocation with controlled prompts
-3. **E2E Tests**: Test full conversation flow through the web UI
+3. **E2E Verification**: Interactive MCP verification of full conversation flow through the web UI
 
 ---
 
-## 2. Test Resources
+## 2. Test Data Baseline
 
-### 2.1 Test Conversation Scenarios
+### Purpose
+
+E2E verification requires a **known, reproducible dataset**. Ad-hoc uploaded videos, leftover data from development, or integration tests that wipe OpenSearch will produce unreliable results. Before running any E2E verification, the system must be reset to a defined baseline.
+
+### Test Video
+
+| Property | Value |
+|----------|-------|
+| **Filename** | `test_meeting_full.mkv` |
+| **Location** | `/data/test/videos/test_meeting_full.mkv` |
+| **Ground Truth** | `/data/test/expected/test_meeting_full_ground_truth.json` |
+| **Content** | Backdrop CMS Weekly Meeting, January 5, 2023 |
+| **Duration** | 803 seconds (13m 23s) |
+| **Words** | ~2216 |
+| **Speakers** | 7 (Jen Lampton, Martin, Robert, Justin, Greg, Luke McCormick, Tim Erickson) |
+| **Expected Segments** | 5-10 (semantic chunking produces ~7 at default settings) |
+| **Topics** | Team intros, community contributions, Backdrop 1.24 features (permissions filter, role descriptions, back-to-site button, search index rebuild, database log config), htaccess/PHP 8 changes, UI updater notifications |
+
+This video was chosen because:
+- At 2216 words, semantic chunking produces multiple segments with meaningful timestamp boundaries
+- Rich topic diversity enables testing search across different timestamps
+- Multiple speakers (though diarization is a Phase 3 concern)
+- Real technical meeting content matches the system's intended use case
+
+### Data Reset Procedure
+
+Run this before E2E verification to establish a clean baseline. Services stay running; only data is cleared.
+
+**Step 1: Clear existing data**
+
+```bash
+# Clear PostgreSQL (cascade deletes segments, transcripts)
+docker compose exec -T postgres psql -U whedifaqaui -d whedifaqaui -c "
+  TRUNCATE videos CASCADE;
+"
+
+# Delete OpenSearch index and recreate
+docker compose exec -T backend python -c "
+from app.services.opensearch_client import get_opensearch_client
+from app.services.indexing import SEGMENTS_INDEX
+client = get_opensearch_client()
+client.indices.delete(index=SEGMENTS_INDEX, ignore=[404])
+"
+
+# Clear video and transcript files
+docker compose exec -T backend sh -c "rm -rf /data/videos/original/* /data/videos/processed/* /data/transcripts/*"
+
+# Clear Celery task queue
+docker compose exec -T redis redis-cli FLUSHALL
+```
+
+**Step 2: Upload test video and wait for processing**
+
+```bash
+# Upload via API
+curl -X POST http://localhost:8000/api/videos \
+  -F "file=@data/test/videos/test_meeting_full.mkv" \
+  -F "title=Backdrop CMS Weekly Meeting" \
+  -F "recording_date=2023-01-05"
+
+# Poll until status=ready (processing takes several minutes on CPU)
+VIDEO_ID=$(curl -s http://localhost:8000/api/videos | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+while [ "$(curl -s http://localhost:8000/api/videos/$VIDEO_ID | python3 -c 'import sys,json; print(json.load(sys.stdin)["status"])')" != "ready" ]; do
+  echo "Processing..."
+  sleep 10
+done
+echo "Video ready: $VIDEO_ID"
+```
+
+**Step 3: Verify baseline**
+
+```bash
+# Confirm segment count in OpenSearch
+curl -s "http://localhost:9200/segments_index/_count" | python3 -c "import sys,json; c=json.load(sys.stdin)['count']; print(f'Segments indexed: {c}'); assert c >= 5, f'Expected >=5 segments, got {c}'"
+
+# Confirm video status
+curl -s http://localhost:8000/api/videos/$VIDEO_ID | python3 -c "import sys,json; v=json.load(sys.stdin); print(f'Status: {v[\"status\"]}, Duration: {v[\"duration\"]}s')"
+```
+
+### Expected Baseline State
+
+After setup, the system should contain:
+- **1 video** ("Backdrop CMS Weekly Meeting", status=ready, 803s)
+- **5-10 segments** in PostgreSQL (from semantic chunking)
+- **5-10 documents** in OpenSearch `segments_index` (all segments indexed)
+- **1 transcript** JSON file in `/data/transcripts/`
+- **1 processed** MP4 in `/data/videos/processed/`
+
+### Search Verification Queries
+
+These queries validate that the baseline is correctly indexed:
+
+| Query | Expected | Timestamp Range |
+|-------|----------|----------------|
+| "permission filter" | Match | 3:00 - 6:40 |
+| "back to site" | Match | 7:55 - 10:37 |
+| "search index rebuild" | Match | 7:55 - 10:37 |
+| "htaccess PHP" | Match | 10:38 - 13:22 |
+| "quantum computing" | No match | - |
+
+---
+
+## 3. Test Resources
+
+### 3.1 Test Conversation Scenarios
 
 Pre-defined conversation scenarios for testing multi-turn interactions:
 
 **Location**: `/data/test/conversations/`
 
-#### Scenario: Authentication Discussion
+#### Scenario: Backdrop CMS Weekly Meeting
 
 ```json
-// /data/test/conversations/auth_discussion.json
+// /data/test/conversations/backdrop_meeting.json
 {
-  "scenario_id": "auth_discussion",
-  "description": "Multi-turn conversation about authentication system",
+  "scenario_id": "backdrop_meeting",
+  "description": "Multi-turn conversation about Backdrop CMS weekly meeting (Jan 5, 2023)",
+  "test_video": "test_meeting_full.mkv (Backdrop CMS Weekly Meeting, 803s, 7 indexed segments)",
   "turns": [
     {
       "turn": 1,
-      "user_message": "What authentication system do we use?",
-      "expected_topics": ["authentication", "Cognito", "Auth0"],
+      "user_message": "What new features were added to Backdrop 1.24?",
+      "expected_topics": ["permission filter", "role descriptions", "back-to-site", "search index rebuild", "database log"],
       "expected_citations_min": 1
     },
     {
       "turn": 2,
-      "user_message": "When did we migrate to it?",
+      "user_message": "Who contributed the back-to-site button?",
       "requires_context": true,
-      "expected_topics": ["migration", "date", "timeline"],
+      "expected_topics": ["Justin", "first core contribution"],
       "expected_citations_min": 1
     },
     {
       "turn": 3,
-      "user_message": "What were the main challenges?",
+      "user_message": "What other issues did they discuss after the feature review?",
       "requires_context": true,
-      "expected_topics": ["challenges", "problems", "issues"],
+      "expected_topics": ["htaccess", "PHP 8", "UI updater", "notification"],
       "expected_citations_min": 1
     }
   ]
@@ -119,13 +230,13 @@ Pre-defined conversation scenarios for testing multi-turn interactions:
   "turns": [
     {
       "turn": 1,
-      "user_message": "What was discussed in the Auth Migration Meeting?",
+      "user_message": "What was discussed in the Backdrop CMS weekly meeting?",
       "expected_citations_min": 2
     },
     {
       "turn": 2,
       "action": "generate_document",
-      "request": "Summarize the authentication discussion",
+      "request": "Summarize the Backdrop 1.24 features discussion",
       "expected_document": {
         "format": "markdown",
         "min_length": 200,
@@ -136,7 +247,7 @@ Pre-defined conversation scenarios for testing multi-turn interactions:
 }
 ```
 
-### 2.2 Mock Claude Responses
+### 3.2 Mock Claude Responses
 
 For unit and integration testing without actual Claude CLI calls:
 
@@ -146,23 +257,27 @@ For unit and integration testing without actual Claude CLI calls:
 // /data/test/mock_responses/chat_responses.json
 {
   "simple_answer": {
-    "input_pattern": "What authentication.*",
-    "response": "Based on the recordings, you use AWS Cognito for authentication. In the Auth Migration Meeting from March 2024, John explained that the team migrated from Auth0 to Cognito due to cost considerations [Auth Migration Meeting @ 2:05].",
+    "input_pattern": "What.*features.*Backdrop 1.24.*",
+    "response": "Backdrop 1.24 introduced several new features: an instant search filter on the permissions page (modeled after the modules page search), descriptions for user roles with separate admin and assignment contexts, a back-to-site button in the administration bar, a rebuild search index process, and a configuration option for database log message length. [Backdrop CMS Weekly Meeting @ 5:48] [Backdrop CMS Weekly Meeting @ 7:55]",
     "expected_citations": [
       {
-        "video_title": "Auth Migration Meeting",
-        "timestamp": "2:05"
+        "video_title": "Backdrop CMS Weekly Meeting",
+        "timestamp": "5:48"
+      },
+      {
+        "video_title": "Backdrop CMS Weekly Meeting",
+        "timestamp": "7:55"
       }
     ]
   },
   "follow_up_answer": {
-    "input_pattern": "When did we migrate.*",
+    "input_pattern": "Who contributed.*back-to-site.*",
     "requires_context": true,
-    "response": "Based on our previous discussion and the recordings, the migration to Cognito was completed in Q2 2024. John mentioned the exact date as April 15th, 2024 [Auth Migration Meeting @ 5:30].",
+    "response": "The back-to-site button was Justin's first core contribution to Backdrop. Jen Lampton mentioned this during the feature review, and the team congratulated him on the contribution. [Backdrop CMS Weekly Meeting @ 7:55]",
     "expected_citations": [
       {
-        "video_title": "Auth Migration Meeting",
-        "timestamp": "5:30"
+        "video_title": "Backdrop CMS Weekly Meeting",
+        "timestamp": "7:55"
       }
     ]
   },
@@ -173,36 +288,36 @@ For unit and integration testing without actual Claude CLI calls:
 }
 ```
 
-### 2.3 Test Context Files
+### 3.3 Test Context Files
 
 Sample context files for testing prompt construction:
 
 ```json
 // /data/test/context/sample_context.json
 {
-  "query": "What authentication system do we use?",
+  "query": "What new features were added to Backdrop 1.24?",
   "segments": [
     {
-      "video_id": "vid-auth-001",
-      "video_title": "Auth Migration Meeting",
-      "timestamp": 125.5,
-      "text": "We decided to migrate from Auth0 to Cognito because of the cost savings and better AWS integration.",
+      "video_id": "8399a812-aff7-404c-8fb2-17f2e0cfd722",
+      "video_title": "Backdrop CMS Weekly Meeting",
+      "timestamp": 348.6,
+      "text": "We don't have a bunch of contrib modules that do anything with files because most of our media stuff is already in core. But I do think we should have a change record up in case anyone is using it in a custom module. And let's see, we added descriptions for roles...",
       "speaker": "SPEAKER_00",
-      "recording_date": "2024-03-15"
+      "recording_date": "2023-01-05"
     },
     {
-      "video_id": "vid-auth-001",
-      "video_title": "Auth Migration Meeting",
-      "timestamp": 330.0,
-      "text": "The migration process took about two weeks, and we had to handle the token refresh logic differently.",
-      "speaker": "SPEAKER_01",
-      "recording_date": "2024-03-15"
+      "video_id": "8399a812-aff7-404c-8fb2-17f2e0cfd722",
+      "video_title": "Backdrop CMS Weekly Meeting",
+      "timestamp": 475.5,
+      "text": "Now you can customize how long you want that length to be... added a back to site button in the administration bar. So when you are on the front end page of your site and you go to edit something and you get thrown deep in the bowels of backdrop...",
+      "speaker": "SPEAKER_00",
+      "recording_date": "2023-01-05"
     }
   ]
 }
 ```
 
-### 2.4 LLM-Based Conversation Quality Verification
+### 3.4 LLM-Based Conversation Quality Verification
 
 For verifying that AI responses are appropriate and well-cited:
 
@@ -257,7 +372,7 @@ SUMMARY|{one_sentence_summary}
 
 ---
 
-## 3. Story-by-Story Test Specifications
+## 4. Story-by-Story Test Specifications
 
 ### S7: Conversational Search
 
@@ -344,7 +459,7 @@ SUMMARY|{one_sentence_summary}
 | S8-F01 | `test_results_panel_renders` | ResultsPanel component renders | Panel visible with heading |
 | S8-F02 | `test_results_list_scrollable` | Results overflow scrolls | Scrollbar appears when needed |
 | S8-F03 | `test_result_item_clickable` | ResultItem has click handler | onClick callback triggered |
-| S8-F04 | `test_result_shows_video_info` | Video result shows title/timestamp | "Auth Meeting @ 2:05" displayed |
+| S8-F04 | `test_result_shows_video_info` | Video result shows title/timestamp | "Backdrop CMS Weekly Meeting @ 5:48" displayed |
 | S8-F05 | `test_result_shows_document_info` | Document result shows title/date | "Summary.md" with icon displayed |
 | S8-F06 | `test_results_accumulate` | New results added to list | Count increases after chat |
 | S8-F07 | `test_results_persist_during_session` | Results survive navigation | Same results after tab switch |
@@ -503,404 +618,193 @@ SUMMARY|{one_sentence_summary}
 
 ---
 
-## 4. End-to-End Test Scenarios
+## 5. E2E Verification (MCP Interactive)
+
+### Approach
+
+E2E verification uses **Playwright MCP** (interactive browser control) as the **primary acceptance gate**. The verifier navigates the live system, interacts with UI elements, takes accessibility snapshots, and visually confirms behavior.
+
+**Precondition for all E2E scenarios**: Data baseline established per [Section 2](#2-test-data-baseline).
+
+**Test Video**: `test_meeting_full.mkv` (Backdrop CMS Weekly Meeting, 803s, 7 indexed segments)
+
+### MCP Verification Method
+
+For each scenario, the verifier uses these Playwright MCP tools:
+- `browser_navigate` — Navigate to URLs
+- `browser_snapshot` — Capture accessibility tree (preferred over screenshots for assertions)
+- `browser_click` — Click elements by reference
+- `browser_type` — Type into inputs
+- `browser_evaluate` — Check DOM state (e.g., video currentTime)
+
+Each verification step records: **PASS** (expected state confirmed) or **FAIL** (with details of what was observed).
+
+---
 
 ### E2E-P2-01: Complete Conversational Search Flow
 
-**Preconditions**: Phase 1 complete, test video processed and indexed
-
-**Test Video**: `test_meeting_primary.mkv` (from Phase 1)
-
 **Steps**:
-1. Navigate to Workspace page (/workspace)
-2. Verify three-panel layout visible
-3. Type question in chat input: "What authentication system do we use?"
-4. Press Enter / click Send
-5. Wait for AI response (loading indicator shown)
-6. Verify response appears in conversation panel
-7. Verify response contains citations
-8. Verify citations added to results panel
-9. Ask follow-up: "When did we migrate to it?"
-10. Verify follow-up uses conversation context
-11. Verify response references "it" correctly
-12. Verify new citations accumulated (not replaced)
+1. Navigate to `/workspace`
+2. Take snapshot — verify three-panel layout visible (`workspace-layout`, `conversation-panel`, `results-panel`, `content-pane`)
+3. Type in chat input: "What new features were added to Backdrop 1.24?"
+4. Click Send button
+5. Wait for AI response — take snapshot, verify `ai-message` element appears
+6. Verify response text mentions at least 2 of: permissions filter, role descriptions, back-to-site, search index rebuild
+7. Verify citations appear in results panel (`result-item-video` elements)
+8. Type follow-up: "Who contributed the back-to-site button?"
+9. Click Send
+10. Wait for second AI response — verify it references "Justin"
+11. Verify results panel now has more citations than after step 7 (accumulated, not replaced)
 
-**Expected Results**:
-- Three-panel layout renders correctly
-- AI responds with relevant information
-- Citations link to video timestamps
-- Follow-up question uses conversation context
-- Results accumulate across turns
-
-**LLM Verification**:
-```python
-# After step 6: Verify response quality
-verification = verify_response_quality(
-    user_question="What authentication system do we use?",
-    context=retrieved_context,
-    ai_response=response.message
-)
-assert verification['overall_pass'] == True
-assert verification['weighted_score'] >= 75
-```
-
-**Playwright Screenshots**:
-- `e2e-p2-01-01-workspace-empty.png` - Empty workspace
-- `e2e-p2-01-02-question-entered.png` - Question in input
-- `e2e-p2-01-03-loading-state.png` - AI thinking indicator
-- `e2e-p2-01-04-response-received.png` - AI response with citations
-- `e2e-p2-01-05-results-panel.png` - Citations in results list
-- `e2e-p2-01-06-followup-response.png` - Follow-up conversation
+**Pass Criteria**:
+- [ ] Three-panel layout renders
+- [ ] AI response is relevant to Backdrop 1.24 features
+- [ ] Citations link to video timestamps
+- [ ] Follow-up correctly uses conversation context
+- [ ] Results accumulate across turns
 
 ---
 
 ### E2E-P2-02: Citation Click Navigation
 
-**Preconditions**: Conversation with citations exists
+**Preconditions**: Conversation with citations exists from E2E-P2-01
 
 **Steps**:
-1. From E2E-P2-01, have conversation with citations
-2. Click on first citation in results panel
-3. Verify content pane shows video player
-4. Verify video loaded and seeked to timestamp
-5. Verify transcript panel synchronized
-6. Verify current segment highlighted
-7. Click on second citation
-8. Verify video/timestamp changes correctly
+1. Click first citation in results panel
+2. Take snapshot — verify content pane shows video player
+3. Evaluate `document.querySelector('video').currentTime` — verify it's within the expected timestamp range for the cited segment (not 0:00)
+4. Take snapshot — verify transcript panel is visible and a segment is highlighted
+5. Click a different citation (different timestamp)
+6. Evaluate video currentTime again — verify it changed to match the new citation
 
-**Expected Results**:
-- Clicking citation loads video in content pane
-- Video seeks to correct timestamp (±1 second)
-- Transcript syncs with video position
-- Different citations load different content
-
-**Playwright Screenshots**:
-- `e2e-p2-02-01-citation-hover.png` - Citation highlighted
-- `e2e-p2-02-02-video-loaded.png` - Video player in content pane
-- `e2e-p2-02-03-transcript-synced.png` - Transcript with highlight
-- `e2e-p2-02-04-second-citation.png` - Different video/timestamp
+**Pass Criteria**:
+- [ ] Clicking citation loads video in content pane
+- [ ] Video seeks to correct timestamp (not 0:00, within ±5s of cited segment)
+- [ ] Transcript syncs with video position
+- [ ] Different citations seek to different timestamps
 
 ---
 
 ### E2E-P2-03: Document Generation Flow
 
-**Preconditions**: Test video processed, conversation established
-
 **Steps**:
-1. Navigate to Workspace
-2. Ask: "What was discussed in the Auth Migration Meeting?"
-3. Wait for response with citations
-4. Ask: "Summarize the authentication discussion"
-5. Wait for document generation
-6. Verify document appears in results panel (with doc icon)
-7. Click on document in results
-8. Verify document viewer shows in content pane
-9. Verify document has proper formatting
-10. Click Download button
-11. Verify file downloads with correct content
+1. Navigate to `/workspace`
+2. Type: "What was discussed in the Backdrop CMS weekly meeting?"
+3. Click Send, wait for response
+4. Type: "Summarize the Backdrop 1.24 features discussion"
+5. Click Send
+6. Wait for document to appear in results panel (look for `result-item-document`)
+7. Click on the document result
+8. Take snapshot — verify document viewer renders in content pane with formatted markdown
+9. Verify download button is visible
 
-**Expected Results**:
-- Document generated and stored
-- Document appears in results list
-- Document viewable in content pane
-- Document downloadable as markdown file
-
-**Playwright Screenshots**:
-- `e2e-p2-03-01-summarize-request.png` - User asks for summary
-- `e2e-p2-03-02-generating-state.png` - Document being generated
-- `e2e-p2-03-03-document-in-results.png` - Document in results list
-- `e2e-p2-03-04-document-viewer.png` - Document in content pane
-- `e2e-p2-03-05-download-triggered.png` - Download initiated
+**Pass Criteria**:
+- [ ] AI generates a document from the conversation
+- [ ] Document appears in results list (distinct from video citations)
+- [ ] Document viewable in content pane with proper formatting
+- [ ] Download button present
 
 ---
 
 ### E2E-P2-04: Multi-Turn Conversation Coherence
 
-**Preconditions**: Test video processed
-
-**Purpose**: Verify AI maintains context across multiple turns
+**Purpose**: Verify AI maintains context across 3 turns with implicit references
 
 **Steps**:
-1. Navigate to Workspace
-2. Turn 1: "What authentication system do we use?"
-3. Wait for response
-4. Turn 2: "Who discussed this?" (implicit reference to auth)
-5. Wait for response
-6. Turn 3: "What problems did they mention?" (implicit reference to person + topic)
-7. Wait for response
-8. **LLM Verify**: Each turn correctly resolves references
+1. Navigate to `/workspace`
+2. Turn 1: Type "What new features were added to Backdrop 1.24?", Send, wait for response
+3. Verify response mentions Backdrop 1.24 features
+4. Turn 2: Type "Who contributed the back-to-site button?", Send, wait for response
+5. Verify response identifies Justin
+6. Turn 3: Type "What other issues did they discuss after the feature review?", Send, wait for response
+7. Verify response references htaccess changes, PHP 8, or UI updater notifications
 
-**LLM Verification Criteria**:
-| Turn | Verification |
-|------|--------------|
-| 1 | Response mentions auth system |
-| 2 | Response identifies speakers who discussed auth |
-| 3 | Response lists problems related to auth mentioned by identified speakers |
-
-**Expected Results**:
-- Turn 2 correctly interprets "this" as authentication
-- Turn 3 correctly interprets "they" as speakers from Turn 2
-- Conversation maintains coherent thread
-
-**Playwright Screenshots**:
-- `e2e-p2-04-01-turn1.png` - First question/response
-- `e2e-p2-04-02-turn2.png` - Second turn with context
-- `e2e-p2-04-03-turn3.png` - Third turn with full context
+**Pass Criteria**:
+- [ ] Turn 1: Relevant feature list
+- [ ] Turn 2: Correctly resolves context — identifies Justin
+- [ ] Turn 3: Correctly resolves "they" and "after" — references post-feature discussion topics
+- [ ] Conversation thread stays coherent
 
 ---
 
 ### E2E-P2-05: Results Persistence During Session
 
-**Preconditions**: Active conversation with results
-
 **Steps**:
-1. Start conversation, accumulate 3+ results
-2. Navigate away from workspace (e.g., to Library)
-3. Return to Workspace
-4. Verify conversation history preserved
-5. Verify results list preserved
-6. Ask new question
-7. Verify new results added to existing list
+1. From a conversation with 3+ accumulated results, note the count
+2. Navigate to Library page (`/`)
+3. Navigate back to Workspace (`/workspace`)
+4. Take snapshot — verify conversation history is still displayed
+5. Verify results list still has the same count
+6. Ask a new question, wait for response
+7. Verify new results are **added** to existing list (count increased)
 
-**Expected Results**:
-- Conversation survives navigation
-- Results persist during session
-- New results accumulate (not replace)
-
-**Playwright Screenshots**:
-- `e2e-p2-05-01-results-before.png` - Results before navigation
-- `e2e-p2-05-02-after-return.png` - Results after returning
-- `e2e-p2-05-03-new-results-added.png` - New results accumulated
+**Pass Criteria**:
+- [ ] Conversation survives navigation away and back
+- [ ] Results persist during session
+- [ ] New results accumulate (not replace)
 
 ---
 
 ### E2E-P2-06: Error Handling - Claude Timeout
 
-**Preconditions**: System running (Claude may be slow/unavailable)
-
 **Steps**:
-1. Navigate to Workspace
-2. Submit query
-3. Simulate Claude timeout (or wait for actual timeout)
-4. Verify error message displayed
-5. Verify system remains usable
-6. Submit another query
-7. Verify normal operation resumes
+1. Navigate to `/workspace`
+2. Submit a query (if Claude is unavailable or slow, observe timeout behavior)
+3. Verify an error message is displayed to the user (not a blank screen or unhandled exception)
+4. Verify the chat input remains usable
+5. Submit another query
+6. Verify the system recovers (either succeeds or shows another clean error)
 
-**Expected Results**:
-- Timeout handled gracefully
-- User-friendly error message
-- System recovers without reload
-
-**Playwright Screenshots**:
-- `e2e-p2-06-01-error-displayed.png` - Timeout error message
-- `e2e-p2-06-02-retry-success.png` - Successful retry
+**Pass Criteria**:
+- [ ] Timeout/error handled gracefully with user-friendly message
+- [ ] System remains usable after error (no reload needed)
 
 ---
 
 ### E2E-P2-07: Empty Search Results Handling
 
-**Preconditions**: Test video processed
-
 **Steps**:
-1. Navigate to Workspace
-2. Ask question about non-existent topic: "What did we discuss about quantum computing?"
-3. Verify AI responds appropriately
-4. Verify no false citations generated
-5. Verify results panel not populated with irrelevant items
+1. Navigate to `/workspace`
+2. Type: "What did we discuss about quantum computing?"
+3. Click Send, wait for response
+4. Verify AI responds with a "no relevant information" type message
+5. Verify no citations were added to the results panel
+6. Verify no false references to unrelated video content
 
-**Expected Results**:
-- AI acknowledges lack of relevant information
-- No citations for irrelevant content
-- Results list unchanged
-
-**Playwright Screenshots**:
-- `e2e-p2-07-01-no-results-response.png` - "No information found" response
+**Pass Criteria**:
+- [ ] AI acknowledges lack of relevant information
+- [ ] No citations generated for irrelevant topic
+- [ ] Results panel unchanged
 
 ---
 
-## 5. Playwright Screenshot Verification
+### MCP Snapshot Verification Checklist
 
-### Screenshot Specification Format
+These snapshots confirm visual/structural correctness during E2E scenarios:
 
-Each screenshot verification includes:
-- **ID**: Unique identifier
-- **URL**: Page URL when captured
-- **Wait condition**: Element to wait for before capture
-- **Viewport**: Browser size (default: 1920x1080)
-- **Assertions**: Visual elements that must be present
-
-### Three-Panel Layout Screenshots
-
-| ID | Filename | Wait Condition | Assertions |
-|----|----------|----------------|------------|
-| SCR-W01 | `workspace-layout.png` | `[data-testid="workspace-layout"]` | Three panels visible |
-| SCR-W02 | `conversation-panel.png` | `[data-testid="conversation-panel"]` | Chat input, message area |
-| SCR-W03 | `results-panel.png` | `[data-testid="results-panel"]` | Results list container |
-| SCR-W04 | `content-pane-empty.png` | `[data-testid="content-pane"]` | Empty state message |
-| SCR-W05 | `content-pane-video.png` | `video[data-testid="video-player"]` | Video player visible |
-| SCR-W06 | `content-pane-document.png` | `[data-testid="document-viewer"]` | Markdown content |
-
-### Chat Interface Screenshots
-
-| ID | Filename | Wait Condition | Assertions |
-|----|----------|----------------|------------|
-| SCR-C01 | `chat-input-empty.png` | `[data-testid="chat-input"]` | Input field, send button |
-| SCR-C02 | `chat-input-typing.png` | `[data-testid="chat-input"]` has value | Text visible in input |
-| SCR-C03 | `chat-loading.png` | `[data-testid="chat-loading"]` | Typing indicator |
-| SCR-C04 | `chat-response.png` | `[data-testid="ai-message"]` | AI response with citations |
-| SCR-C05 | `chat-history.png` | Multiple `.chat-message` | User and AI messages |
-| SCR-C06 | `citation-in-message.png` | `[data-testid="citation-link"]` | Clickable citation |
-
-### Results Panel Screenshots
-
-| ID | Filename | Wait Condition | Assertions |
-|----|----------|----------------|------------|
-| SCR-R01 | `results-empty.png` | `[data-testid="results-empty"]` | Empty state message |
-| SCR-R02 | `results-with-videos.png` | `[data-testid="result-item-video"]` | Video results visible |
-| SCR-R03 | `results-with-documents.png` | `[data-testid="result-item-document"]` | Document with icon |
-| SCR-R04 | `result-selected.png` | `.result-item.selected` | Highlighted selection |
-
-### Document Screenshots
-
-| ID | Filename | Wait Condition | Assertions |
-|----|----------|----------------|------------|
-| SCR-D01 | `document-generating.png` | `[data-testid="doc-generating"]` | Generation indicator |
-| SCR-D02 | `document-preview.png` | `[data-testid="document-card"]` | Card with preview text |
-| SCR-D03 | `document-full-view.png` | `[data-testid="document-viewer"]` | Full markdown rendered |
-| SCR-D04 | `document-download.png` | `[data-testid="download-button"]` | Download button visible |
-
-### Playwright Test Structure
-
-```typescript
-// e2e/phase2.spec.ts
-
-import { test, expect } from '@playwright/test';
-
-test.describe('Phase 2 E2E Tests', () => {
-
-  test('E2E-P2-01: Complete conversational search flow', async ({ page }) => {
-    // Step 1: Navigate to workspace
-    await page.goto('/workspace');
-    await expect(page.getByTestId('workspace-layout')).toBeVisible();
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-01-workspace-empty.png' });
-
-    // Step 2: Verify three-panel layout
-    await expect(page.getByTestId('conversation-panel')).toBeVisible();
-    await expect(page.getByTestId('results-panel')).toBeVisible();
-    await expect(page.getByTestId('content-pane')).toBeVisible();
-
-    // Step 3: Enter question
-    const chatInput = page.getByTestId('chat-input');
-    await chatInput.fill('What authentication system do we use?');
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-02-question-entered.png' });
-
-    // Step 4: Submit
-    await page.getByTestId('send-button').click();
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-03-loading-state.png' });
-
-    // Step 5: Wait for response (with reasonable timeout for Claude)
-    await expect(page.getByTestId('ai-message')).toBeVisible({ timeout: 60000 });
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-04-response-received.png' });
-
-    // Step 6: Verify citations in results
-    await expect(page.getByTestId('result-item-video')).toBeVisible();
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-05-results-panel.png' });
-
-    // Step 7: Follow-up question
-    await chatInput.fill('When did we migrate to it?');
-    await page.getByTestId('send-button').click();
-
-    // Wait for follow-up response
-    const messages = page.locator('[data-testid="ai-message"]');
-    await expect(messages).toHaveCount(2, { timeout: 60000 });
-    await page.screenshot({ path: 'screenshots/e2e-p2-01-06-followup-response.png' });
-
-    // Verify conversation context maintained
-    const followUpResponse = await messages.nth(1).textContent();
-    expect(followUpResponse?.toLowerCase()).toContain('migrat');
-  });
-
-  test('E2E-P2-02: Citation click navigation', async ({ page }) => {
-    // Setup: Create conversation with citations
-    await page.goto('/workspace');
-    await page.getByTestId('chat-input').fill('What authentication system do we use?');
-    await page.getByTestId('send-button').click();
-    await expect(page.getByTestId('result-item-video')).toBeVisible({ timeout: 60000 });
-
-    // Click citation
-    const firstResult = page.getByTestId('result-item-video').first();
-    await firstResult.click();
-    await page.screenshot({ path: 'screenshots/e2e-p2-02-02-video-loaded.png' });
-
-    // Verify video player loaded
-    const videoPlayer = page.locator('video[data-testid="video-player"]');
-    await expect(videoPlayer).toBeVisible();
-
-    // Verify timestamp
-    const expectedTimestamp = await firstResult.getAttribute('data-timestamp');
-    // Note: Video currentTime verification requires waiting for seek
-    await page.waitForTimeout(1000);
-    await page.screenshot({ path: 'screenshots/e2e-p2-02-03-transcript-synced.png' });
-  });
-
-  test('E2E-P2-03: Document generation flow', async ({ page }) => {
-    await page.goto('/workspace');
-
-    // Ask about a topic
-    await page.getByTestId('chat-input').fill('What was discussed in the Auth Migration Meeting?');
-    await page.getByTestId('send-button').click();
-    await expect(page.getByTestId('ai-message')).toBeVisible({ timeout: 60000 });
-
-    // Request summary
-    await page.getByTestId('chat-input').fill('Summarize the authentication discussion');
-    await page.getByTestId('send-button').click();
-    await page.screenshot({ path: 'screenshots/e2e-p2-03-01-summarize-request.png' });
-
-    // Wait for document generation (may take longer)
-    await expect(page.getByTestId('result-item-document')).toBeVisible({ timeout: 90000 });
-    await page.screenshot({ path: 'screenshots/e2e-p2-03-03-document-in-results.png' });
-
-    // Click document to view
-    await page.getByTestId('result-item-document').click();
-    await expect(page.getByTestId('document-viewer')).toBeVisible();
-    await page.screenshot({ path: 'screenshots/e2e-p2-03-04-document-viewer.png' });
-
-    // Verify download button
-    await expect(page.getByTestId('download-button')).toBeVisible();
-  });
-});
-```
+| ID | When | What to Verify |
+|----|------|----------------|
+| SCR-W01 | E2E-P2-01 step 2 | Three-panel workspace layout |
+| SCR-W02 | E2E-P2-01 step 2 | Conversation panel with chat input |
+| SCR-W03 | E2E-P2-01 step 7 | Results panel with citations |
+| SCR-W04 | E2E-P2-01 step 2 | Content pane empty state |
+| SCR-W05 | E2E-P2-02 step 2 | Content pane with video player |
+| SCR-W06 | E2E-P2-03 step 8 | Content pane with document viewer |
+| SCR-C01 | E2E-P2-01 step 2 | Chat input field and send button |
+| SCR-C02 | E2E-P2-01 step 5 | AI response with citations in message |
+| SCR-C03 | E2E-P2-04 step 6 | Multi-turn conversation history |
+| SCR-R01 | E2E-P2-07 step 5 | Results panel unchanged (empty or prior state) |
+| SCR-R02 | E2E-P2-01 step 7 | Results panel with video citations |
+| SCR-R03 | E2E-P2-03 step 7 | Results panel with document entry |
+| SCR-D01 | E2E-P2-03 step 8 | Document rendered in viewer |
 
 ---
 
 ## 6. Test Data Management
 
-### Database Seeding for Phase 2
+### Data Reset
 
-```python
-# backend/tests/fixtures/phase2_seed_data.py
-
-# Requires Phase 1 video to be processed
-PHASE2_TEST_CONVERSATIONS = [
-    {
-        "id": "conv-11111111-1111-1111-1111-111111111111",
-        "created_at": "2024-03-15T10:00:00Z",
-        "turns": 3
-    }
-]
-
-PHASE2_TEST_DOCUMENTS = [
-    {
-        "id": "doc-22222222-2222-2222-2222-222222222222",
-        "session_id": "session-test-001",
-        "title": "Authentication System Summary",
-        "content": "# Authentication System Summary\n\nBased on the team discussions...",
-        "source_video_ids": ["vid-auth-001"],
-        "created_at": "2024-03-15T10:30:00Z"
-    }
-]
-```
+See [Section 2: Test Data Baseline](#2-test-data-baseline) for the complete data reset procedure. This must be run before E2E verification.
 
 ### Claude Mock for Unit Tests
 
@@ -950,11 +854,11 @@ class MockClaudeService:
 def mock_claude():
     """Pytest fixture for mocked Claude service."""
     mock_service = MockClaudeService({
-        "authentication": {
-            "response": "Based on the recordings, you use AWS Cognito for authentication [Auth Meeting @ 2:05]."
+        "features": {
+            "response": "Backdrop 1.24 introduced several features including a permissions page search filter, role descriptions, a back-to-site button, and a rebuild search index process [Backdrop CMS Weekly Meeting @ 5:48]."
         },
-        "migrate": {
-            "response": "The migration happened in Q2 2024 [Auth Meeting @ 5:30]."
+        "back-to-site": {
+            "response": "The back-to-site button was Justin's first core contribution to Backdrop [Backdrop CMS Weekly Meeting @ 7:55]."
         }
     })
 
@@ -986,6 +890,12 @@ def cleanup_temp_files():
     # Cleanup after test
     shutil.rmtree(test_temp_dir, ignore_errors=True)
 ```
+
+### OpenSearch Test Isolation
+
+**Known Issue**: Integration tests in `backend/tests/integration/test_search_api.py` use the production `segments_index` and wipe all documents with `delete_by_query(match_all)`. This destroys any manually uploaded test data.
+
+**Requirement**: Integration tests MUST use a separate test index (e.g., `segments_index_test`) or run the data reset procedure after completion. See the Phase 1 investigation notes for full root cause analysis.
 
 ---
 
@@ -1020,48 +930,38 @@ def cleanup_temp_files():
 
 **Total frontend tests**: ~34 tests
 
-#### End-to-End Tests
+#### E2E Verification (MCP Interactive — PRIMARY GATE)
 
-- [ ] E2E-P2-01: Complete conversational search flow passing
-- [ ] E2E-P2-02: Citation click navigation passing
-- [ ] E2E-P2-03: Document generation flow passing
-- [ ] E2E-P2-04: Multi-turn conversation coherence passing (LLM verified)
-- [ ] E2E-P2-05: Results persistence during session passing
-- [ ] E2E-P2-06: Error handling - Claude timeout passing
-- [ ] E2E-P2-07: Empty search results handling passing
+- [ ] Data baseline established (Section 2 reset procedure)
+- [ ] E2E-P2-01: Complete conversational search flow — all pass criteria met
+- [ ] E2E-P2-02: Citation click navigation — video seeks to correct timestamps
+- [ ] E2E-P2-03: Document generation flow — document created and viewable
+- [ ] E2E-P2-04: Multi-turn conversation coherence — context correctly maintained
+- [ ] E2E-P2-05: Results persistence during session — survives navigation
+- [ ] E2E-P2-06: Error handling — graceful timeout/error recovery
+- [ ] E2E-P2-07: Empty search results — no false citations
 
-**Total E2E tests**: 7 scenarios
+**Total E2E scenarios**: 7 (verified interactively via Playwright MCP)
 
-#### LLM Verification Tests
+#### MCP Snapshot Verification
 
-- [ ] S7-E01: Response relevance ≥85%
-- [ ] S7-E02: Citation quality ≥80%
-- [ ] S7-E03: Conversation context resolution
-- [ ] S7-E04: Multi-turn coherence (all turns ≥75%)
-- [ ] S2-E01: Summary accuracy ≥85%
-- [ ] S2-E02: Cross-video synthesis
+- [ ] All SCR-W* snapshots verified (6 checks — workspace layout)
+- [ ] All SCR-C* snapshots verified (3 checks — chat interface)
+- [ ] All SCR-R* snapshots verified (3 checks — results panel)
+- [ ] All SCR-D* snapshots verified (1 check — document viewer)
 
-**Total LLM verification criteria**: 6 checks
-
-#### Screenshot Verification
-
-- [ ] All SCR-W* screenshots captured and verified (6 screenshots)
-- [ ] All SCR-C* screenshots captured and verified (6 screenshots)
-- [ ] All SCR-R* screenshots captured and verified (4 screenshots)
-- [ ] All SCR-D* screenshots captured and verified (4 screenshots)
-
-**Total screenshots**: ~20 screenshots
+**Total snapshot checks**: 13
 
 ### Acceptance Verification Matrix
 
-| Story | Unit Tests | Integration Tests | E2E Coverage | LLM Verification | Screenshots |
-|-------|------------|-------------------|--------------|------------------|-------------|
-| S7 | S7-U01-12, S7-F01-07 | S7-I01-07 | E2E-P2-01, E2E-P2-04 | S7-E01-04 | SCR-C01-06 |
-| S8 | S8-U01-02, S8-F01-08 | S8-I01-02 | E2E-P2-01, E2E-P2-05 | - | SCR-R01-04 |
-| S9 | S9-U01, S9-F01-07 | S9-I01-03 | E2E-P2-02 | - | SCR-W04-06 |
-| S2 | S2-U01-03 | S2-I01-02 | E2E-P2-01 | S2-E01-02 | SCR-C04 |
-| S10 | S10-U01-04, S10-F01-05 | S10-I01-06 | E2E-P2-03 | - | SCR-D01-04 |
-| V4 | V4-U01-03, V4-F01-02 | V4-I01-03 | - | - | - |
+| Story | Unit Tests | Integration Tests | MCP E2E Verification | MCP Snapshots |
+|-------|------------|-------------------|---------------------|---------------|
+| S7 | S7-U01-12, S7-F01-07 | S7-I01-07 | E2E-P2-01, E2E-P2-04 | SCR-W01-04, SCR-C01-03 |
+| S8 | S8-U01-02, S8-F01-08 | S8-I01-02 | E2E-P2-01, E2E-P2-05 | SCR-R01-03 |
+| S9 | S9-U01, S9-F01-07 | S9-I01-03 | E2E-P2-02 | SCR-W05 |
+| S2 | S2-U01-03 | S2-I01-02 | E2E-P2-01 | SCR-C02 |
+| S10 | S10-U01-04, S10-F01-05 | S10-I01-06 | E2E-P2-03 | SCR-W06, SCR-R03, SCR-D01 |
+| V4 | V4-U01-03, V4-F01-02 | V4-I01-03 | - | - |
 
 ### Critical Path Testing
 
@@ -1123,20 +1023,25 @@ whedifaqaui/
 │               ├── useChat.test.ts
 │               └── useWorkspace.test.ts
 │
-├── e2e/
-│   ├── playwright.config.ts
-│   ├── phase2.spec.ts                      # Playwright E2E scenarios
-│   └── screenshots/                        # Captured screenshots
-│
 └── data/
     └── test/
+        ├── videos/
+        │   ├── test_meeting_full.mkv       # PRIMARY: Backdrop CMS meeting (803s, 7 speakers)
+        │   ├── test_meeting_primary.mkv    # Family discussion (81s, Phase 1)
+        │   ├── test_meeting_long.mkv       # Trimmed meeting intro (185s, Phase 1)
+        │   ├── test_silent.mkv             # Silent video (error testing)
+        │   └── test_corrupted.mkv          # Truncated file (error testing)
         ├── conversations/                  # Test conversation scenarios
-        │   ├── auth_discussion.json
+        │   ├── backdrop_meeting.json       # Backdrop CMS weekly meeting scenario
         │   └── document_generation.json
         ├── mock_responses/                 # Mock Claude responses
         │   └── chat_responses.json
-        └── context/                        # Sample context files
-            └── sample_context.json
+        ├── context/                        # Sample context files
+        │   └── sample_context.json
+        └── expected/
+            ├── test_meeting_full_ground_truth.json  # Ground truth for full meeting
+            ├── test_meeting_long_ground_truth.json  # Ground truth for trimmed meeting
+            └── test_meeting_primary_ground_truth.json  # Ground truth for family discussion
 ```
 
 ---
@@ -1144,6 +1049,16 @@ whedifaqaui/
 ## Appendix B: Commands Reference
 
 ```bash
+# ============================================
+# DATA BASELINE (run before E2E verification)
+# ============================================
+
+# See Section 2 for full procedure. Summary:
+# 1. Clear DB, OpenSearch, files
+# 2. Upload test_meeting_full.mkv via API
+# 3. Wait for processing to complete
+# 4. Verify segment count in OpenSearch
+
 # ============================================
 # BACKEND TESTS
 # ============================================
@@ -1157,9 +1072,6 @@ cd backend && pytest tests/unit/test_chat_service.py -v
 # Run Phase 2 integration tests
 cd backend && pytest tests/integration/test_chat_api.py -v
 cd backend && pytest tests/integration/test_document_api.py -v
-
-# Run LLM verification tests (requires Claude CLI)
-cd backend && pytest tests/e2e/test_conversation_quality.py -v
 
 # Run all Phase 2 backend tests
 cd backend && pytest tests/ -k "phase2 or chat or document or claude" -v
@@ -1181,27 +1093,12 @@ cd frontend && npm test -- --grep "Document"
 cd frontend && npm test -- --grep "S7|S8|S9|S2|S10|V4"
 
 # ============================================
-# END-TO-END TESTS (Playwright)
+# E2E VERIFICATION (Playwright MCP)
 # ============================================
 
-# Run Phase 2 E2E tests
-cd e2e && npx playwright test phase2.spec.ts
-
-# Run with UI for debugging
-cd e2e && npx playwright test phase2.spec.ts --ui
-
-# Run specific E2E scenario
-cd e2e && npx playwright test phase2.spec.ts -g "E2E-P2-01"
-
-# Update screenshots
-cd e2e && npx playwright test phase2.spec.ts --update-snapshots
-
-# ============================================
-# FULL PHASE 2 TEST SUITE
-# ============================================
-
-# Run all tests (requires Phase 1 complete + test data)
-./scripts/run-phase2-tests.sh
+# E2E verification is performed interactively via Playwright MCP.
+# See Section 5 for the verification scenarios and pass criteria.
+# No scripted test runner — the verifier uses MCP tools directly.
 ```
 
 ---

@@ -1,0 +1,256 @@
+0:04
+okay looks like we're live today is Thursday January 5th 2023. happy New
+0:11
+Year everybody this is our first weekly meeting of the new year and post backdrop feature freeze which is pretty
+0:18
+exciting um before we get into the agenda we're going to go around to the room and have people do introductions
+0:24
+um Nate likes to manage these in a very organized fashion but I like to do them at random to make sure everybody's on
+0:31
+their toes uh so we're gonna do popcorn I'll go first a call in the next person um my name is Jen Lampton I'm from
+0:37
+Oakland California I'm very excited about all of the features we got into 124 that we're going to talk about later today
+0:43
+um and I will pass it on to Martin I am Martin and the United Kingdom
+0:52
+um I'm a web developer I pass it on to Robert
+0:58
+Lang I called her on the internet in Altadena California and uh excited about
+1:05
+working on contrib modules to get them ready to release at the same time or in response to 1.24
+1:13
+um and digesting
+1:19
+Muncie Indiana and uh I'm here because this is only the second
+1:25
+one of these I've ever been to so I'll go next if someone else uh uh so
+1:33
+I'm Greg I'm I'm usually joining from Australia Melbourne but now I'm joining from Greece
+1:38
+um here for uh the the winter Christmas holidays excited about the new release
+1:44
+as well been reviewing code that other people have produced over the past few months
+1:49
+uh for the the new release and then filing follow-up issues like crazy
+1:54
+really excited about the potentials things that we can do uh yes so many things to do and so so many
+2:01
+interesting and challenging things uh and with that I'll pass it on to Martin did you go I've already been all right
+2:09
+so then look all right I'm Luke McCormick in San
+2:14
+Ramon California near San Francisco um web project manager and
+2:22
+General get about uh excited about all sorts of things we're
+2:27
+doing here and I think Tim's the last one to go right
+2:34
+um I definitely haven't went yet I don't know if I'm latched but I'll go now to Tim Erickson St Paul Tim uh just
+2:41
+recovering from uh from covet so um probably be a bit quiet today but uh
+2:46
+feeling pretty good so I other than a cough and a little you know tired throat I think I'm in
+2:52
+good shape uh and great to see the work that happened uh love the the filter the permission filters that's so cool stick
+2:59
+that in uh that's it for me
+3:05
+um going through the community contributions section I'm going to start with new projects uh in the last week we
+3:13
+got two new contrib projects with official releases Administration bar views grouping and enable modules report
+3:20
+recipe and I think both of those came from I don't know if they came from but they both were discussed in core issues
+3:27
+about things that how how we could improve core and um then there were contrib modules for them and I don't
+3:33
+know what the order was but it seems really cool that there's a lot of core
+3:38
+development fueling kinship projects for people who need those features which is pretty cool
+3:45
+uh for draft blog posts we have two weeks well
+3:51
+about two weeks to get a blog post ready for the backdrop 124 release I assigned
+3:57
+that um checklist item to myself to go through those um uh new features and make sure they
+4:03
+all have that little paragraph at the bottom that's like text for blog posts or whatever some of them already have it
+4:09
+thanks to our issue template which is really great but a lot of them don't so I haven't gotten to that yet I'm also starting to add labels for whether they
+4:15
+need a translation update or whether they have um need change records and stuff uh I've
+4:21
+gotten through like three of them we got a bunch of new issues so um once I get that done I'll add a note on the
+4:29
+um checklist issue and other people can start on the blog post and hopefully that'll make it a lot easier to get that
+4:35
+written uh I checked today's Forum post but there were no new items in it
+4:43
+I'll try it again because I checked it before the last meeting which is I guess good
+4:49
+um so if we want to talk about backdrop 124 the features that we got in are the
+4:57
+instant search filter on the permissions page that Tim mentioned and that is
+5:02
+modeled off of our search box on the modules page it just allows you to hide
+5:08
+things with JavaScript to see only exactly what you need um Robert cat a bug with it almost
+5:14
+immediately after we added it in it worked on the main permissions Matrix but there was an issue on a permissions
+5:20
+page for a single roll we got that caught it fixed it and got that in also
+5:25
+so that's great uh turn around on that
+5:30
+um we had a core issue to clean up the API for files
+5:37
+um that are access checks for all other entities were a little bit different so we just made the access checks for files
+5:43
+work more like the access checks for other entities uh I don't think that's going to affect very many people we
+5:49
+don't have a bunch of contrib modules to do anything with files because most of our media stuff is already in core
+5:55
+um but I do think we should have a change record up in case anyone is using it in a custom module
+6:00
+uh and let's see we added descriptions for roles so if you now go to the user
+6:07
+roles page you'll see that each role should have a description on it and if you edit a role you have the opportunity
+6:13
+to add two different descriptions one of them is the one that shows up there on that description page and then the other
+6:19
+one will show up um when you're assigning a role to a person so that it'll allow
+6:24
+administrators to have information for themselves in one interface and information for other people that they
+6:29
+need to know when they're signing roles in another place um we went back and forth a lot on the text in those and so I would love to
+6:35
+have people review that one and make sure that the text will be landed on makes sense
+6:40
+um we've got a couple you know some time to clean that up if we don't like the default values that are added
+6:47
+um but in general that's going to be really helpful there's also a sort of a secret feature in there where if you're on like a node type form or something
+6:54
+and you're trying to assign permissions to someone and you forget what the roles are you can hover over the column
+7:00
+heading and it'll have a little title attribute pop-up that'll tell you the description from the roles page which I
+7:07
+think is useful too a views field handle Handler for project
+7:13
+properties in the database this is so that you can build a view of all of your
+7:18
+enabled modules for example and there's a the content project that came out I think leverages this feature which is
+7:25
+great um it also sparked another great issue in the court queue about how we manage our
+7:31
+project data and so I'm hopeful to see um a big core Improvement uh in 125
+7:37
+based on the work from this issue 124. so that's exciting too
+7:43
+uh we added a configuration option for database log messages so this is
+7:48
+something that's always bothered me when you go to the log page and you can only see like the first however many characters of your message and you're
+7:54
+like oh I wish I could see all of it now you can customize how long you want that length to be so if you want to see 255
+8:00
+characters of message on that page you can or you can make it any link you want so there's now a setting it's a system
+8:06
+core setting you can leave it or change it if you want which is great
+8:12
+we uh oh this is a good one added a back to site button in the administration bar
+8:18
+so when you are on the front end page of your site you go to edit something and
+8:23
+you get thrown deep in the bowels of backdrop and then you click around and you want to get back to wherever the
+8:28
+heck you were before you can click on the home button and instead of just taking you to the home page of your site it'll take you back to where you were
+8:34
+before you went to the back um which is really helpful uh and it doesn't isn't a home icon anymore it
+8:41
+says back to site you need Justin yeah that's I think that's going to be a huge uh win
+8:48
+that was Justin's first core contribution really or yeah congratulations
+8:55
+great job um so and then the last new feature we got in was to add a rebuild search index
+9:03
+process so Greg and I did a bunch of work on that search index form when it first went into Bachelor we're like why
+9:09
+does this work this way it's so dumb there was a button that said rebuilt search index that did not rebuild your search index so we cleaned up the form
+9:14
+to rename the button but me and uh RG piano went through and we're like why
+9:20
+don't we just actually make it read about the search index which is what people really wanted
+9:25
+um so now there's a nicely batched process that will rebuild your search index for you which is really great so
+9:30
+I'm happy to see that um got some attention seven years later whatever it is
+9:36
+just really good Doom so those are all the features that we currently have in one 24 zero I would
+9:43
+encourage everybody who hasn't tested a preview release which is out now you can
+9:49
+get it both from the GitHub repository or on then more ways to try backdrop Pages at the very bottom of the page
+9:55
+there you can grab download s give it a test especially these news
+10:01
+features make sure you don't find anything weird happening if you can think of strange use cases we might not have tried for stuff that would be great
+10:09
+uh we've got a couple weeks to get any changes in too if you don't like the text we're using places or want to
+10:16
+improve interfaces or what have you so that's it for 124
+10:23
+um lost my agenda let's see
+10:28
+uh well is there anything else anyone wants to bring up today might worth it so many
+10:36
+things so many let's just put something in the chat about uh five nine one one
+10:42
+which is about how we notify people who are updating using the
+10:51
+the UI update that they need to do a manual step
+10:57
+yeah so in this latest version of backdrop quote we did include a change to the HTT access file to support php8
+11:05
+um and so this is one of those rare occasions where we have changed these files outside of the core directory and
+11:11
+most people who are updating core manually will probably know to do that but if you're using the user interface
+11:17
+it only replaces that core directory and as pointed out would be very nice if we
+11:23
+showed something in the user interface to let people know that the other things need to be done
+11:30
+um so I think this is a good idea I don't know how we do it yeah it's
+11:37
+difficult not to crack um I've been I've been trying to think of
+11:42
+ways like one of the biggest problems and why we left we've chosen to to leave
+11:49
+these files alone is that people might have customized it according to this
+11:54
+them actually to to the sides of the the needs of the sites and there's no
+12:02
+way currently to know if they have done so so we don't know if they've
+12:07
+customized it and what we have chosen to be doing so far is just to leave them alone yeah I think I think that's the right
+12:13
+choice but even in just like how do we tell people that there's a change like
+12:19
+trying to figure out how that setting could be delivered like we might need like a a state variable that would be
+12:27
+like notify of you know core files change update or whatever and then when
+12:33
+we do an update that has them we could add an update hook that would change the state of that variable and then they
+12:39
+would get a little warning on their site somewhere that would say that they need to do it and then once they've read the warning they'll have the option to like
+12:45
+dismiss this warning and that would change the state variable back um it's the only thing I can think of
+12:50
+because we don't really want us like a permanent a config setting for it because then you might turn it on
+12:56
+otherwise so I think um there's a few things there's a few things that I thought with this specific
+13:03
+change that triggered this whole discussion if you upgrade your site or like I did
+13:10
+my local sites I I changed the default on Lando which was uh 7.4 PHP to eight
+13:16
+and then randomly after many weeks I started seeing that certain settings wouldn't take and then Martin jumped in
+13:23
+and said 

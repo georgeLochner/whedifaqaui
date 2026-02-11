@@ -24,6 +24,9 @@ build/
 data/**
 !data/**/
 !data/**/.gitkeep
+# Track test resource files (ground truth, transcripts) but not large video files
+!data/test/expected/**
+data/test/videos/*.mkv
 
 # Logs
 *.log

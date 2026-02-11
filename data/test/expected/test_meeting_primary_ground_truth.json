@@ -1,0 +1,125 @@
+{
+  "source": "youtube",
+  "source_file": "test1.txt",
+  "duration_seconds": 85.0,
+  "speaker_count": 2,
+  "segment_count": 18,
+  "word_count": 298,
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.0,
+      "text": "Our first topic is family, and my question is, who do you think that you're the most like?"
+    },
+    {
+      "start": 5.0,
+      "end": 12.0,
+      "text": "Dan: Who am I the most like, in appearance? Vanessa: Yes. Dan: Both appearance and character?"
+    },
+    {
+      "start": 12.0,
+      "end": 18.0,
+      "text": "Vanessa: Yeah, both."
+    },
+    {
+      "start": 18.0,
+      "end": 23.0,
+      "text": "Dan: Okay, so appearance I look mostly like my mom, I think."
+    },
+    {
+      "start": 23.0,
+      "end": 25.0,
+      "text": "Vanessa: Okay."
+    },
+    {
+      "start": 25.0,
+      "end": 27.0,
+      "text": "Dan: I have more of her skin tone, I have her eyes. Vanessa: Yeah."
+    },
+    {
+      "start": 27.0,
+      "end": 30.0,
+      "text": "Dan: And on her side of the family, most of the people are pretty skinny, and I'm a rather skinny guy."
+    },
+    {
+      "start": 30.0,
+      "end": 33.0,
+      "text": "My dad's side is German, and they tend to be a little bit bigger."
+    },
+    {
+      "start": 33.0,
+      "end": 39.0,
+      "text": "So yeah, I definitely got my mom's side. But character wise, I think I'm a little more like my dad."
+    },
+    {
+      "start": 39.0,
+      "end": 45.0,
+      "text": "Would you agree? Vanessa: Yeah, I'd say you have shades of your dad."
+    },
+    {
+      "start": 45.0,
+      "end": 48.0,
+      "text": "Dan: You know me so well, so you can answer this, too."
+    },
+    {
+      "start": 48.0,
+      "end": 50.0,
+      "text": "Vanessa: Yeah."
+    },
+    {
+      "start": 50.0,
+      "end": 52.0,
+      "text": "Yeah, I think you have shades of your dad. Yeah. Dan: Shades, yeah."
+    },
+    {
+      "start": 52.0,
+      "end": 54.0,
+      "text": "I think I'm more silly than my dad, that's not very hard because my dad is pretty serious."
+    },
+    {
+      "start": 54.0,
+      "end": 57.0,
+      "text": "Vanessa: Ah, he's got a silly side though. Dan: He does, yeah."
+    },
+    {
+      "start": 57.0,
+      "end": 67.0,
+      "text": "But for the most part, I think I'm more like my dad because he has a very calm demeanor, he's very patient, and he doesn't get stressed about anything."
+    },
+    {
+      "start": 67.0,
+      "end": 73.0,
+      "text": "And actually, my dad gets so unstressed about everything, I can't even understand it."
+    },
+    {
+      "start": 73.0,
+      "end": 85.0,
+      "text": "I'm like, \"How are you so calm right now?\" And everybody I know thinks that I'm the most stress free person they know. Vanessa: But your dad"
+    }
+  ],
+  "key_terms": [
+    "family",
+    "appearance",
+    "character",
+    "mom",
+    "dad",
+    "German",
+    "skinny",
+    "calm",
+    "patient",
+    "stressed",
+    "silly",
+    "serious",
+    "demeanor",
+    "skin tone",
+    "eyes"
+  ],
+  "expected_topics": [
+    "family resemblance",
+    "physical appearance",
+    "personality traits",
+    "parent comparison"
+  ],
+  "language": "en",
+  "notes": "Casual conversation between Dan and Vanessa about family resemblance. Two speakers with clear turn-taking."
+}

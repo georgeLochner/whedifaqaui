@@ -92,7 +92,7 @@ function VideoPage() {
           {video.duration != null && (
             <span>Duration: {formatTimestamp(video.duration)}</span>
           )}
-          {video.participants.length > 0 && (
+          {video.participants && video.participants.length > 0 && (
             <span>Participants: {video.participants.join(', ')}</span>
           )}
         </div>

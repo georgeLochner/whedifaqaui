@@ -1,0 +1,195 @@
+{
+  "source": "manual_transcription",
+  "source_file": "test_meeting_long.txt",
+  "title": "Backdrop CMS Weekly Meeting",
+  "recording_date": "2023-01-05",
+  "duration_seconds": 185,
+  "speaker_count": 7,
+  "speakers": ["Jen Lampton", "Martin", "Robert", "Greg", "Luke McCormick", "Tim Erickson", "Unknown"],
+  "segments": [
+    {
+      "start": 4.0,
+      "end": 11.0,
+      "text": "okay looks like we're live today is Thursday January 5th 2023. happy New",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 11.0,
+      "end": 18.0,
+      "text": "Year everybody this is our first weekly meeting of the new year and post backdrop feature freeze which is pretty",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 18.0,
+      "end": 24.0,
+      "text": "exciting um before we get into the agenda we're going to go around to the room and have people do introductions",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 24.0,
+      "end": 31.0,
+      "text": "um Nate likes to manage these in a very organized fashion but I like to do them at random to make sure everybody's on",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 31.0,
+      "end": 37.0,
+      "text": "their toes uh so we're gonna do popcorn I'll go first a call in the next person um my name is Jen Lampton I'm from",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 37.0,
+      "end": 43.0,
+      "text": "Oakland California I'm very excited about all of the features we got into 124 that we're going to talk about later today",
+      "speaker": "Jen Lampton"
+    },
+    {
+      "start": 43.0,
+      "end": 52.0,
+      "text": "um and I will pass it on to Martin I am Martin and the United Kingdom",
+      "speaker": "Martin"
+    },
+    {
+      "start": 52.0,
+      "end": 58.0,
+      "text": "um I'm a web developer I pass it on to Robert",
+      "speaker": "Martin"
+    },
+    {
+      "start": 58.0,
+      "end": 65.0,
+      "text": "Lang I called her on the internet in Altadena California and uh excited about",
+      "speaker": "Robert"
+    },
+    {
+      "start": 65.0,
+      "end": 73.0,
+      "text": "working on contrib modules to get them ready to release at the same time or in response to 1.24",
+      "speaker": "Robert"
+    },
+    {
+      "start": 73.0,
+      "end": 79.0,
+      "text": "um and digesting",
+      "speaker": "Unknown"
+    },
+    {
+      "start": 79.0,
+      "end": 85.0,
+      "text": "Muncie Indiana and uh I'm here because this is only the second",
+      "speaker": "Unknown"
+    },
+    {
+      "start": 85.0,
+      "end": 93.0,
+      "text": "one of these I've ever been to so I'll go next if someone else uh uh so",
+      "speaker": "Unknown"
+    },
+    {
+      "start": 93.0,
+      "end": 98.0,
+      "text": "I'm Greg I'm I'm usually joining from Australia Melbourne but now I'm joining from Greece",
+      "speaker": "Greg"
+    },
+    {
+      "start": 98.0,
+      "end": 104.0,
+      "text": "um here for uh the the winter Christmas holidays excited about the new release",
+      "speaker": "Greg"
+    },
+    {
+      "start": 104.0,
+      "end": 109.0,
+      "text": "as well been reviewing code that other people have produced over the past few months",
+      "speaker": "Greg"
+    },
+    {
+      "start": 109.0,
+      "end": 114.0,
+      "text": "uh for the the new release and then filing follow-up issues like crazy",
+      "speaker": "Greg"
+    },
+    {
+      "start": 114.0,
+      "end": 121.0,
+      "text": "really excited about the potentials things that we can do uh yes so many things to do and so so many",
+      "speaker": "Greg"
+    },
+    {
+      "start": 121.0,
+      "end": 129.0,
+      "text": "interesting and challenging things uh and with that I'll pass it on to Martin did you go I've already been all right",
+      "speaker": "Greg"
+    },
+    {
+      "start": 129.0,
+      "end": 134.0,
+      "text": "so then look all right I'm Luke McCormick in San",
+      "speaker": "Luke McCormick"
+    },
+    {
+      "start": 134.0,
+      "end": 142.0,
+      "text": "Ramon California near San Francisco um web project manager and",
+      "speaker": "Luke McCormick"
+    },
+    {
+      "start": 142.0,
+      "end": 147.0,
+      "text": "General get about uh excited about all sorts of things we're",
+      "speaker": "Luke McCormick"
+    },
+    {
+      "start": 147.0,
+      "end": 154.0,
+      "text": "doing here and I think Tim's the last one to go right",
+      "speaker": "Luke McCormick"
+    },
+    {
+      "start": 154.0,
+      "end": 161.0,
+      "text": "um I definitely haven't went yet I don't know if I'm latched but I'll go now to Tim Erickson St Paul Tim uh just",
+      "speaker": "Tim Erickson"
+    },
+    {
+      "start": 161.0,
+      "end": 166.0,
+      "text": "recovering from uh from covet so um probably be a bit quiet today but uh",
+      "speaker": "Tim Erickson"
+    },
+    {
+      "start": 166.0,
+      "end": 172.0,
+      "text": "feeling pretty good so I other than a cough and a little you know tired throat I think I'm in",
+      "speaker": "Tim Erickson"
+    },
+    {
+      "start": 172.0,
+      "end": 179.0,
+      "text": "good shape uh and great to see the work that happened uh love the the filter the permission filters that's so cool stick",
+      "speaker": "Tim Erickson"
+    },
+    {
+      "start": 179.0,
+      "end": 185.0,
+      "text": "that in uh that's it for me",
+      "speaker": "Tim Erickson"
+    }
+  ],
+  "key_terms": [
+    "backdrop",
+    "feature freeze",
+    "contrib",
+    "modules",
+    "release",
+    "permissions",
+    "core"
+  ],
+  "expected_topics": [
+    "team introductions",
+    "Backdrop 1.24 release anticipation",
+    "permissions page search filter"
+  ],
+  "language": "en",
+  "notes": "Trimmed to introduction round (0-185s) for faster CPU transcription. Contains all 7 speakers with 6 speaker transitions. Original was 803 seconds (13+ minutes). Speaker attribution is approximate based on context. Some speakers (marked 'Unknown') could not be reliably identified from text alone."
+}
