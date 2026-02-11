@@ -24,15 +24,7 @@ RUNDIR=logs/run/$(date +%s)_{task_id} && mkdir -p $RUNDIR
 ```
 Use `$RUNDIR` as the `--output-dir` value in all subsequent commands.
 
-### Step 2: Check for uncommitted changes from previous attempts
-Before assigning a previously-attempted task, check if there are uncommitted changes:
-```bash
-git status
-git stash list
-```
-If uncommitted changes exist, include this in the prompt so the agent knows to review them.
-
-### Step 3: Run the coding agent
+### Step 2: Run the coding agent
 
 **New agent, first task of feature:**
 ```bash
@@ -70,11 +62,10 @@ If uncommitted changes exist, include this in the prompt so the agent knows to r
 
 **Do not use extended thinking for:**
 - Initial attempts at straightforward implementation tasks
-- Context exhaustion retries (context was the issue, not difficulty)
 
 **Central Logging**: Each feature logs to its own file: `logs/coder-<feature-id>.log`. Watch activity with `tail -f logs/coder-<feature-id>.log`.
 
-### Step 4: Monitor and wait for completion
+### Step 3: Monitor and wait for completion
 
 Run the script as a **background** bash command so you can monitor the agent.
 
