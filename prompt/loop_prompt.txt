@@ -132,6 +132,7 @@ bd list | grep <task-id>
    - Previous task succeeded?
 
    If all yes → reuse session. Otherwise → new agent.
+   **Exception:** Always use a new agent for E2E/integration tasks (see Session Reuse Rules).
 
 3. Find next task with `bd ready` and continue loop.
 
@@ -144,6 +145,9 @@ The agent discovered a blocker and filed it. The blocking issue must be resolved
 ```bash
 # Check what's blocking
 bd show <task-id>
+
+# Create a new RUNDIR (Step 1) before launching the agent
+RUNDIR=logs/run/$(date +%s)_<blocking-task-id> && mkdir -p $RUNDIR
 
 # Assign the blocking issue (use extended thinking - it's a discovered problem)
 ./run_claude_agent.sh \
@@ -166,8 +170,10 @@ git status
 git log --oneline -5
 ```
 
-Use extended thinking since retries are harder:
+Create a new RUNDIR (Step 1) and retry with extended thinking:
 ```bash
+RUNDIR=logs/run/$(date +%s)_<task-id> && mkdir -p $RUNDIR
+
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). A previous agent failed - check git status and git log for partial progress, and run tail -20 logs/coder-<feature-id>.log to see what it was doing before it stopped. Complete the task and exit. Do not continue with additional tasks." \
   --output-dir $RUNDIR \
@@ -202,6 +208,8 @@ Reuse an existing session when ALL conditions are met:
 | Enough context remaining | Agent output shows `free_space > 35%` |
 | Same feature | Next task has same feature-id as previous |
 
+**Exception:** Always start a new agent for E2E verification or integration test tasks, even if reuse conditions are met. These tasks are unpredictable in complexity and need maximum context headroom.
+
 When reusing, the agent already has:
 - The coding_agent_prompt.txt instructions
 - The feature description
@@ -227,22 +235,23 @@ Do not close a feature if any child task is still open, in_progress, or blocked.
 
 ```
 1. bd ready                          # Find available task
-2. Assign task to agent              # New or resumed session
-3. Monitor via TaskOutput + central log
-4. bd list | grep <task-id>          # Check result
-5. If closed:
+2. Create RUNDIR                     # logs/run/$(date +%s)_<task-id>
+3. Assign task to agent              # New or resumed session
+4. Monitor via TaskOutput + central log
+5. bd list | grep <task-id>          # Check result
+6. If closed:
    a. Check if feature complete → close if so
    b. Decide session reuse
    c. Go to step 1
-6. If blocked:
+7. If blocked:
    a. Assign blocking issue
    b. After resolved, original task becomes ready
    c. Go to step 1
-7. If in_progress (failed):
+8. If in_progress (failed):
    a. Check attempt count
    b. Retry with extended thinking
    c. Go to step 1
-8. If no ready tasks remain → done
+9. If no ready tasks remain → done
 ```
 
 ## Exit Conditions
