@@ -71,6 +71,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - VIDEO_STORAGE_PATH=/data/videos
       - TRANSCRIPT_STORAGE_PATH=/data/transcripts
+      - HF_TOKEN=${HF_TOKEN:-}
     volumes:
       - video_data:/data/videos
       - transcript_data:/data/transcripts
@@ -100,6 +101,7 @@ services:
       - TRANSCRIPT_STORAGE_PATH=/data/transcripts
       - WHISPER_MODEL=${WHISPER_MODEL:-medium}
       - WHISPER_DEVICE=${WHISPER_DEVICE:-cpu}
+      - HF_TOKEN=${HF_TOKEN:-}
     volumes:
       - video_data:/data/videos
       - transcript_data:/data/transcripts
