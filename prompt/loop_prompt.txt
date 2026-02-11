@@ -67,9 +67,10 @@ Use `$RUNDIR` as the `--output-dir` value in all subsequent commands.
 
 ### Step 3: Monitor and wait for completion
 
-Run the script as a **background** bash command so you can monitor the agent.
+Run the `run_claude_agent.sh` command as a background Bash call (`run_in_background: true`). This returns a task_id.
 
-Poll every 1-2 minutes. Each poll:
+Use `TaskOutput` with `timeout: 120000` (2 minutes) to wait for completion. If the agent is still running when the timeout expires, check activity:
+
 ```bash
 # Seconds since agent last produced output
 echo $(( $(date +%s) - $(stat -c %Y $RUNDIR/verbose.jsonl) ))
@@ -81,12 +82,12 @@ tail -5 logs/coder-<feature-id>.log
 **Decision criteria:**
 | Observation | Action |
 |-------------|--------|
-| Recent activity, agent working normally | Keep waiting |
-| Agent running a known slow operation (pip install, transcription, model download) | Keep waiting |
+| Recent activity, agent working normally | Call `TaskOutput` again (2 min timeout) |
+| Agent running a known slow operation (pip install, transcription, model download) | Call `TaskOutput` again (2 min timeout) |
 | No new output for 10+ minutes and no slow operation visible | Kill: `kill $(cat $RUNDIR/agent.pid)` |
 | Agent repeating the same failing action | Kill: `kill $(cat $RUNDIR/agent.pid)` |
 
-When the agent finishes (or is killed), read the result:
+When `TaskOutput` returns the completed result (or after killing the agent), read the result:
 ```bash
 cat $RUNDIR/result.txt
 ```
