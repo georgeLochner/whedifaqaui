@@ -46,9 +46,9 @@ Use `$RUNDIR` as the `--output-dir` value in all subsequent commands.
 ```
 
 **When to use extended thinking (`--extended-thinking 10000`):**
-- Discovered blockers (already covered above)
-- Non-context retry failures (already covered below)
-- E2E verification or integration tasks — these commonly uncover real bugs
+- Discovered blockers
+- Retries after agent failure
+- E2E verification or integration tasks
 - Tasks that touch infrastructure (Docker, Celery config, dependency management)
 
 **Do not use extended thinking for:**
@@ -155,12 +155,6 @@ After the blocker is resolved, the original task will become ready again.
 
 The agent crashed, ran out of context, or was killed. It will not have left handoff notes.
 
-Check for uncommitted work:
-```bash
-git status
-git log --oneline -5
-```
-
 Create a new RUNDIR (Step 1) and retry with extended thinking:
 ```bash
 RUNDIR=logs/run/$(date +%s)_<task-id> && mkdir -p $RUNDIR
@@ -195,7 +189,7 @@ Reuse an existing session when ALL conditions are met:
 
 | Condition | How to Check |
 |-----------|--------------|
-| Previous task succeeded | `bd list | grep <previous-task>` shows `closed` |
+| Previous task succeeded | You just checked this in Determining Success |
 | Enough context remaining | Agent output shows `free_space > 35%` |
 | Same feature | Next task has same feature-id as previous |
 
