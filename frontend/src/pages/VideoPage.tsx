@@ -17,6 +17,7 @@ function VideoPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
+  const [seekTime, setSeekTime] = useState<number | undefined>(undefined)
 
   const initialTime = searchParams.get('t')
     ? Number(searchParams.get('t'))
@@ -54,6 +55,7 @@ function VideoPage() {
   const handleSegmentClick = useCallback(
     (segment: TranscriptSegment) => {
       setCurrentTime(segment.start_time)
+      setSeekTime(segment.start_time)
       setSearchParams({ t: String(segment.start_time) }, { replace: true })
     },
     [setSearchParams]
@@ -102,6 +104,7 @@ function VideoPage() {
             videoId={video.id}
             onTimeUpdate={handleTimeUpdate}
             initialTime={initialTime}
+            seekTo={seekTime}
           />
         </div>
 

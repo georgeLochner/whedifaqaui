@@ -21,6 +21,7 @@ const mockPlayer = {
   on: mockOn,
   dispose: mockDispose,
   currentTime: mockCurrentTime,
+  isDisposed: vi.fn().mockReturnValue(false),
 }
 
 vi.mock('video.js', () => ({
@@ -44,7 +45,7 @@ describe('P1-F01: VideoPlayer renders', () => {
     render(<VideoPlayer videoId="test-123" />)
     const video = screen.getByTestId('video-player')
     expect(video).toBeInTheDocument()
-    expect(video.tagName).toBe('VIDEO')
+    expect(video.tagName).toBe('VIDEO-JS')
   })
 })
 
