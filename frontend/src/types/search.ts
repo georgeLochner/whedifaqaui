@@ -21,11 +21,10 @@ export interface SearchResult {
   speaker: string | null
   score: number
   highlights: string[]
+  timestamp_formatted: string
 }
 
 export interface SearchResponse {
+  count: number
   results: SearchResult[]
-  total: number
-  query: string
-  mode: 'quick' | 'deep'
 }

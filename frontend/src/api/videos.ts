@@ -43,10 +43,17 @@ export async function uploadVideo(
 
 export async function getVideos(
   skip = 0,
-  limit = 20
+  limit = 20,
+  status?: string,
+  sort?: string
 ): Promise<VideoListResponse> {
   const { data } = await apiClient.get<VideoListResponse>('/videos', {
-    params: { skip, limit },
+    params: {
+      skip,
+      limit,
+      ...(status && { status }),
+      ...(sort && { sort }),
+    },
   })
   return data
 }
