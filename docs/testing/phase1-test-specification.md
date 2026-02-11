@@ -122,18 +122,18 @@ The YouTube transcript (VTT/SRT format) is converted to our expected JSON format
 ### 2.2 Additional Test Resources
 
 #### Resource: `test_meeting_long.mkv`
-- **Duration**: ~13 minutes (803 seconds)
-- **Content**: Backdrop CMS weekly meeting (January 5, 2023)
+- **Duration**: ~3 minutes (185 seconds) — trimmed to introduction round for CPU-friendly transcription
+- **Content**: Backdrop CMS weekly meeting introduction round (January 5, 2023)
 - **Speakers**: 7 identified speakers (Jen Lampton, Martin, Robert, Greg, Luke McCormick, Tim Erickson, Unknown)
-- **Purpose**: Multi-speaker diarization testing, longer transcription stress test
+- **Purpose**: Multi-speaker diarization testing (all 7 speakers, 6 transitions)
 - **Location**: `/data/test/videos/test_meeting_long.mkv`
 - **Ground Truth**: `/data/test/expected/test_meeting_long_ground_truth.json`
-- **Key Topics**: PHP8 support, permissions filter, contrib modules, views field handlers, administration bar
-- **Key Terms**: `backdrop`, `PHP8`, `permissions`, `contrib`, `views`, `htaccess`, `core`, `modules`, `search index`, `roles`
+- **Key Topics**: Team introductions, permissions filter, contrib modules, Backdrop 1.24 release
+- **Key Terms**: `backdrop`, `feature freeze`, `permissions`, `contrib`, `modules`, `release`, `core`
 
 **Use Cases**:
-- Verify speaker diarization accuracy with 7+ distinct speakers
-- Test transcription quality on longer recordings
+- Verify speaker diarization accuracy with 7 distinct speakers
+- Verify speaker transitions are detected at natural boundaries
 - Verify chunking behavior with extended content
 - Test search across longer transcripts
 
@@ -962,11 +962,11 @@ assert verification['overall_pass'] == True, f"Transcript quality failed: {verif
 
 ### E2E-06: Multi-Speaker Diarization Test
 
-**Purpose**: Verify speaker diarization accuracy with 7+ speakers using the longer test video
+**Purpose**: Verify speaker diarization accuracy with 7 speakers using the multi-speaker test video
 
 **Preconditions**: System running, test data prepared
 
-**Test Video**: `test_meeting_long.mkv` (Backdrop CMS meeting with 7+ speakers)
+**Test Video**: `test_meeting_long.mkv` (Backdrop CMS meeting intro round, ~3 min, 7 speakers)
 
 **Steps**:
 1. Navigate to Upload page
@@ -976,7 +976,7 @@ assert verification['overall_pass'] == True, f"Transcript quality failed: {verif
    - Date: 2023-01-05
    - Participants: "Jen, Martin, Robert, Greg, Luke, Tim"
    - Notes: "Multi-speaker diarization test"
-4. Submit and wait for processing (may take longer due to duration)
+4. Submit and wait for processing
 5. Verify status = ready
 6. Run LLM verification against ground truth (`test_meeting_long_ground_truth.json`)
 7. Navigate to video player
@@ -985,14 +985,14 @@ assert verification['overall_pass'] == True, f"Transcript quality failed: {verif
 10. Search for "permissions filter" - verify results from this video
 
 **Expected Results**:
-- Processing completes successfully for 13+ minute video
-- Speaker diarization identifies multiple distinct speakers
+- Processing completes successfully
+- Speaker diarization identifies multiple distinct speakers (7 in ground truth)
 - Speaker transitions align with natural conversation breaks
 - Ground truth verification passes (content accuracy ≥80%)
-- Search returns relevant segments
+- Search returns relevant segments (Tim mentions "permission filters" at ~172s)
 
 **Playwright Screenshots**:
-- `e2e06-01-long-video-processing.png` - Processing status for long video
+- `e2e06-01-multi-speaker-processing.png` - Processing status
 - `e2e06-02-multi-speaker-transcript.png` - Transcript showing multiple speakers
 - `e2e06-03-speaker-transitions.png` - Detail of speaker change
 
@@ -1511,7 +1511,7 @@ whedifaqaui/
 │   └── test/
 │       ├── videos/
 │       │   ├── test_meeting_primary.mkv    # YouTube-sourced test video
-│       │   ├── test_meeting_long.mkv       # Multi-speaker meeting (~13 min, 7+ speakers)
+│       │   ├── test_meeting_long.mkv       # Multi-speaker meeting intro (~3 min, 7 speakers)
 │       │   ├── test_silent.mkv             # FFmpeg-generated silent video
 │       │   └── test_corrupted.mkv          # Truncated file for error testing
 │       └── expected/

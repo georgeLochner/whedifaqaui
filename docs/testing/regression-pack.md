@@ -263,6 +263,35 @@ Before running regression tests:
 
 ---
 
+### R1-11: Multi-Speaker Diarization
+
+**Objective**: Verify speaker diarization works with 7 distinct speakers
+
+**Precondition**: System running, services healthy
+
+**Steps**:
+1. Upload `/data/test/videos/test_meeting_long.mkv` with metadata:
+   - Title: "Backdrop CMS Weekly Meeting"
+   - Date: 2023-01-05
+   - Participants: "Jen, Martin, Robert, Greg, Luke, Tim"
+2. Wait for processing to complete (status = ready)
+3. Navigate to video page
+4. Verify transcript shows multiple distinct speaker labels
+5. Verify speaker transitions occur at natural conversation breaks
+6. Search for "permissions filter" - verify results from this video
+7. Run LLM verification against ground truth (`/data/test/expected/test_meeting_long_ground_truth.json`)
+
+**Expected Outcome**:
+- Processing completes successfully
+- Multiple distinct speaker labels appear in transcript (ground truth has 7)
+- Speaker transitions align with natural handoffs (introductions round)
+- Search for "permissions filter" returns a result from this video (Tim mentions it at ~172s)
+- LLM ground truth verification passes (content accuracy ≥80%)
+
+**Test Specification Reference**: E2E-06 in `docs/testing/phase1-test-specification.md`
+
+---
+
 ## Phase 2 Tests
 
 *To be added after Phase 2 implementation*
