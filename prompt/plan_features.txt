@@ -135,7 +135,9 @@ See the feature description (bd show beads-abc123) for full technical context."
 
 ## Step 5: Set Up Dependencies
 
-Features should be ordered so foundational work comes first. Common patterns:
+**All features must form a single linear chain.** Even when two features are technically independent, chain them sequentially. Only one feature should be ready at a time — this keeps `bd ready` clean and ensures a single agent works at a time.
+
+Order features so foundational work comes first. Common patterns:
 
 1. Infrastructure → Backend Core → Backend Features → Frontend
 2. Data models → Services → APIs → UI
@@ -144,7 +146,7 @@ Features should be ordered so foundational work comes first. Common patterns:
 For each feature after the first, set up TWO dependencies:
 
 ```bash
-# If Feature B depends on Feature A:
+# Feature B comes after Feature A in the chain:
 
 # 1. Feature B depends on Feature A (keeps bd ready clean)
 bd dep add beads-feature-B beads-feature-A
