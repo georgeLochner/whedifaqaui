@@ -6,7 +6,7 @@ export interface Video {
   thumbnail_path: string | null
   duration: number | null
   recording_date: string | null
-  participants: string[]
+  participants: string[] | null
   context_notes: string | null
   status: 'uploaded' | 'processing' | 'transcribing' | 'chunking' | 'indexing' | 'ready' | 'error'
   error_message: string | null

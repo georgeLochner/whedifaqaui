@@ -35,7 +35,7 @@ export default function VideoCard({ video }: VideoCardProps) {
           </span>
           <StatusBadge status={video.status} />
         </div>
-        {video.participants.length > 0 && (
+        {video.participants && video.participants.length > 0 && (
           <p className="mt-1 text-xs text-gray-500">
             {video.participants.length} participant
             {video.participants.length !== 1 ? 's' : ''}
