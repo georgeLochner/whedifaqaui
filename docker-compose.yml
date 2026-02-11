@@ -63,7 +63,7 @@ services:
     image: whedifaqaui-backend:phase1-deps
     build:
       context: .
-      dockerfile: docker/Dockerfile.worker
+      dockerfile: docker/Dockerfile.backend
     environment:
       - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200
@@ -90,7 +90,7 @@ services:
     image: whedifaqaui-backend:phase1-deps
     build:
       context: .
-      dockerfile: docker/Dockerfile.worker
+      dockerfile: docker/Dockerfile.backend
     environment:
       - DATABASE_URL=postgresql://whedifaqaui:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/whedifaqaui
       - OPENSEARCH_URL=http://opensearch:9200

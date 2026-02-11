@@ -25,6 +25,8 @@ docker compose down
 
 Services: backend(:8000), frontend(:3000), postgres(:5432), opensearch(:9200), redis(:6379)
 
+**Shared Image:** Backend and worker share a single Docker image (`whedifaqaui-backend:phase1-deps`) built from `docker/Dockerfile.backend`. Both services use this image and differ only by their startup command. There is no separate worker Dockerfile.
+
 **Key Principle:** Edit code on host filesystem (not inside containers). Changes reflect immediately in running containers. No rebuild needed.
 
 **Adding Dependencies:** When you add a package to `package.json` or `requirements.txt`, install it inside the running container — do NOT rebuild the image:
