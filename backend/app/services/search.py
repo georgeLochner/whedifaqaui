@@ -87,9 +87,10 @@ def search(query: str, limit: int = 10) -> SearchResponse:
     bm25_response = client.search(index=SEGMENTS_INDEX, body=bm25_body)
     bm25_hits = bm25_response["hits"]["hits"]
 
-    # Run kNN vector search
+    # Run kNN vector search (min_score filters out low-relevance results)
     knn_body = {
         "size": limit,
+        "min_score": 0.75,
         "query": {
             "knn": {
                 "embedding": {

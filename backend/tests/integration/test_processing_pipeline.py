@@ -407,7 +407,7 @@ def test_chunking_creates_segments(
 # ---------------------------------------------------------------------------
 
 
-@patch("app.tasks.indexing._get_opensearch_client")
+@patch("app.tasks.indexing.get_opensearch_client")
 @patch("app.services.embedding.load_embedding_model")
 def test_chunks_indexed_to_opensearch(
     mock_load_model, mock_get_client, db, chunking_video_with_segments
@@ -459,7 +459,7 @@ def test_chunks_indexed_to_opensearch(
 # ---------------------------------------------------------------------------
 
 
-@patch("app.tasks.indexing._get_opensearch_client")
+@patch("app.tasks.indexing.get_opensearch_client")
 @patch("app.services.embedding.load_embedding_model")
 def test_chunk_embeddings_generated(
     mock_load_model, mock_get_client, db, chunking_video_with_segments
