@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, videos
+from app.api.routes import health, search, videos
 
 app = FastAPI(
     title="Whedifaqaui",
@@ -21,6 +21,7 @@ app.add_middleware(
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(videos.router, prefix="/api", tags=["videos"])
+app.include_router(search.router, prefix="/api", tags=["search"])
 
 
 @app.get("/")
