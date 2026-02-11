@@ -2,10 +2,12 @@ import logging
 import uuid
 from datetime import datetime
 
-from opensearchpy import OpenSearch
-
-from app.core.config import settings
 from app.core.database import SessionLocal
+from app.core.opensearch import (
+    SEGMENTS_INDEX,
+    ensure_segments_index,
+    get_opensearch_client,
+)
 from app.models.segment import Segment
 from app.schemas.video import VideoStatus
 from app.services.embedding import generate_embeddings
@@ -13,61 +15,6 @@ from app.services.video import update_status
 from app.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
-
-SEGMENTS_INDEX = "segments_index"
-
-SEGMENTS_INDEX_BODY = {
-    "settings": {
-        "index": {
-            "knn": True,
-            "number_of_shards": 1,
-            "number_of_replicas": 0,
-        }
-    },
-    "mappings": {
-        "properties": {
-            "id": {"type": "keyword"},
-            "video_id": {"type": "keyword"},
-            "video_title": {"type": "text"},
-            "transcript_id": {"type": "keyword"},
-            "text": {"type": "text", "analyzer": "english"},
-            "embedding": {
-                "type": "knn_vector",
-                "dimension": 768,
-                "method": {
-                    "name": "hnsw",
-                    "space_type": "cosinesimil",
-                    "engine": "lucene",
-                    "parameters": {
-                        "ef_construction": 128,
-                        "m": 16,
-                    },
-                },
-            },
-            "start_time": {"type": "float"},
-            "end_time": {"type": "float"},
-            "speaker": {"type": "keyword"},
-            "recording_date": {"type": "date"},
-            "created_at": {"type": "date"},
-        }
-    },
-}
-
-
-def _get_opensearch_client() -> OpenSearch:
-    """Create an OpenSearch client from settings."""
-    return OpenSearch(
-        hosts=[settings.OPENSEARCH_URL],
-        use_ssl=False,
-        verify_certs=False,
-    )
-
-
-def _ensure_index(client: OpenSearch) -> None:
-    """Create the segments index if it does not exist."""
-    if not client.indices.exists(index=SEGMENTS_INDEX):
-        client.indices.create(index=SEGMENTS_INDEX, body=SEGMENTS_INDEX_BODY)
-        logger.info("Created OpenSearch index: %s", SEGMENTS_INDEX)
 
 
 @celery_app.task(name="app.tasks.indexing.index_segments", bind=True, max_retries=2)
@@ -101,8 +48,8 @@ def index_segments(self, video_id: str) -> dict:
         embeddings = generate_embeddings(texts)
 
         # Create OpenSearch client and ensure index exists
-        client = _get_opensearch_client()
-        _ensure_index(client)
+        client = get_opensearch_client()
+        ensure_segments_index(client)
 
         # Bulk index documents
         bulk_body = []
