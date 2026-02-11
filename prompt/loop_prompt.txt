@@ -26,16 +26,7 @@ Use `$RUNDIR` as the `--output-dir` value in all subsequent commands.
 
 ### Step 2: Run the coding agent
 
-**New agent, first task of feature:**
-```bash
-./run_claude_agent.sh \
-  --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>) for context. Complete the task and exit. Do not continue with additional tasks." \
-  --output-dir $RUNDIR \
-  --central-log logs/coder-<feature-id>.log \
-  --model opus
-```
-
-**New agent, continuing partial feature (some tasks already closed):**
+**New agent:**
 ```bash
 ./run_claude_agent.sh \
   --prompt "First read prompt/coding_agent_prompt.txt for standard instructions. Then read the feature description (bd show <feature-id>) and task description (bd show <task-id>). Run bd list | grep <feature-id> to see completed tasks (do not re-read them individually). Complete the task and exit. Do not continue with additional tasks." \
