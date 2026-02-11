@@ -198,7 +198,7 @@ Reuse an existing session when ALL conditions are met:
 
 | Condition | How to Check |
 |-----------|--------------|
-| Previous task succeeded | `bd show <previous-task>` shows `closed` |
+| Previous task succeeded | `bd list | grep <previous-task>` shows `closed` |
 | Enough context remaining | Agent output shows `free_space > 35%` |
 | Same feature | Next task has same feature-id as previous |
 
@@ -227,23 +227,22 @@ Do not close a feature if any child task is still open, in_progress, or blocked.
 
 ```
 1. bd ready                          # Find available task
-2. Check git status                  # Look for uncommitted changes
-3. Assign task to agent              # New or resumed session
-4. Wait for agent to exit
-5. bd show <task-id>                 # Check result
-6. If closed:
+2. Assign task to agent              # New or resumed session
+3. Monitor via TaskOutput + central log
+4. bd list | grep <task-id>          # Check result
+5. If closed:
    a. Check if feature complete → close if so
    b. Decide session reuse
    c. Go to step 1
-7. If blocked:
+6. If blocked:
    a. Assign blocking issue
    b. After resolved, original task becomes ready
    c. Go to step 1
-8. If in_progress (failed):
-   a. Check free_space and attempt count
-   b. Retry with appropriate strategy
+7. If in_progress (failed):
+   a. Check attempt count
+   b. Retry with extended thinking
    c. Go to step 1
-9. If no ready tasks remain → done
+8. If no ready tasks remain → done
 ```
 
 ## Exit Conditions
