@@ -77,6 +77,7 @@ const citationsResponse = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  sessionStorage.clear()
   capturedVideoPlayerProps = {}
   mockSendChatMessage.mockResolvedValue(citationsResponse)
 })

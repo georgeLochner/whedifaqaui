@@ -6,13 +6,17 @@
  * - Navigation shows Workspace link
  */
 
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 // jsdom does not implement scrollIntoView
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn()
+})
+
+beforeEach(() => {
+  sessionStorage.clear()
 })
 
 vi.mock('../../api/chat', () => ({

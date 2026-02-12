@@ -19,6 +19,7 @@ const mockSendChatMessage = vi.mocked(sendChatMessage)
 describe('useChat hook', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
   })
 
   it('initializes with empty state', () => {
@@ -82,6 +83,7 @@ describe('useChat hook', () => {
 describe('S7-F04: Chat loading state', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
   })
 
   it('sets isLoading true during API call and false after', async () => {
@@ -123,6 +125,7 @@ describe('S7-F04: Chat loading state', () => {
 describe('S7-F05: Conversation ID stored', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
   })
 
   it('stores conversationId from first response', async () => {
@@ -179,6 +182,7 @@ describe('S7-F05: Conversation ID stored', () => {
 describe('useChat error handling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    sessionStorage.clear()
   })
 
   it('sets error on API failure', async () => {

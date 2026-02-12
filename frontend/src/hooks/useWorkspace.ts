@@ -1,5 +1,16 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Citation } from '../types/chat'
+
+const STORAGE_KEY = 'workspace-results'
+
+function loadResults(): ResultItem[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
 
 export interface ResultItem {
   id: string
@@ -33,8 +44,12 @@ function citationToResultItem(citation: Citation): ResultItem {
 }
 
 export function useWorkspace(): UseWorkspaceReturn {
-  const [results, setResults] = useState<ResultItem[]>([])
+  const [results, setResults] = useState<ResultItem[]>(loadResults)
   const [selectedResult, setSelectedResult] = useState<ResultItem | null>(null)
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(results))
+  }, [results])
 
   const addResult = useCallback((citation: Citation) => {
     const item = citationToResultItem(citation)

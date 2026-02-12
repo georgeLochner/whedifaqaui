@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ChatMessage } from '../types/chat'
 import { sendChatMessage } from '../api/chat'
 
@@ -10,13 +10,44 @@ export interface UseChatReturn {
   sendMessage: (text: string) => Promise<void>
 }
 
-let messageCounter = 0
+const MESSAGES_KEY = 'chat-messages'
+const CONV_ID_KEY = 'chat-conversation-id'
+
+function loadMessages(): ChatMessage[] {
+  try {
+    const raw = sessionStorage.getItem(MESSAGES_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return parsed.map((m: ChatMessage) => ({
+      ...m,
+      timestamp: new Date(m.timestamp),
+    }))
+  } catch {
+    return []
+  }
+}
+
+function loadConversationId(): string | null {
+  return sessionStorage.getItem(CONV_ID_KEY)
+}
+
+let messageCounter = Date.now()
 
 export function useChat(): UseChatReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages)
+  const [conversationId, setConversationId] = useState<string | null>(loadConversationId)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages))
+  }, [messages])
+
+  useEffect(() => {
+    if (conversationId) {
+      sessionStorage.setItem(CONV_ID_KEY, conversationId)
+    }
+  }, [conversationId])
 
   const sendMessage = useCallback(
     async (text: string) => {

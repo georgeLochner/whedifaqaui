@@ -5,7 +5,7 @@
  * S8-F07  test_results_persist_during_session — Results survive re-renders
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWorkspace } from '../../hooks/useWorkspace'
 import type { Citation } from '../../types/chat'
@@ -19,6 +19,10 @@ const makeCitation = (overrides: Partial<Citation> = {}): Citation => ({
 })
 
 describe('useWorkspace hook', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   it('initializes with empty results and null selectedResult', () => {
     const { result } = renderHook(() => useWorkspace())
 
