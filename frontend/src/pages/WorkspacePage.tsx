@@ -6,7 +6,7 @@ import ResultsPanel from '../components/workspace/ResultsPanel'
 import ContentPane from '../components/workspace/ContentPane'
 
 export default function WorkspacePage() {
-  const { results, selectedResult, addResults, selectResult } = useWorkspace()
+  const { results, selectedResult, addResults, addDocumentResult, selectResult } = useWorkspace()
 
   const handleCitationClick = useCallback(
     (citation: Citation) => {
@@ -30,6 +30,13 @@ export default function WorkspacePage() {
     [addResults]
   )
 
+  const handleDocumentGenerated = useCallback(
+    (doc: { id: string; title: string }) => {
+      addDocumentResult(doc)
+    },
+    [addDocumentResult]
+  )
+
   return (
     <div
       className="h-[calc(100vh-4rem)] grid grid-cols-[30%_25%_45%] -mx-4 sm:-mx-6 lg:-mx-8 -my-6"
@@ -38,6 +45,7 @@ export default function WorkspacePage() {
       <ConversationPanel
         onCitationClick={handleCitationClick}
         onCitationsReceived={handleCitationsReceived}
+        onDocumentGenerated={handleDocumentGenerated}
       />
       <ResultsPanel
         results={results}
