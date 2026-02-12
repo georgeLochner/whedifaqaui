@@ -118,6 +118,7 @@ def search(query: str, limit: int = 10) -> SearchResponse:
             start_time=src["start_time"],
             end_time=src["end_time"],
             speaker=src.get("speaker"),
+            recording_date=src.get("recording_date"),
             score=hit["_rrf_score"],
             timestamp_formatted=_format_timestamp(src["start_time"]),
         ))

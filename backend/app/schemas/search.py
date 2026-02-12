@@ -11,6 +11,7 @@ class SearchResult(BaseModel):
     start_time: float
     end_time: float
     speaker: str | None = None
+    recording_date: str | None = None
     score: float
     timestamp_formatted: str
 
