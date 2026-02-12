@@ -18,6 +18,34 @@ MAX_CONTEXT_CHARS = 32000  # ~8000 tokens, context truncation limit
 CITATION_PATTERN = re.compile(r"\[([^\]]+?)\s*@\s*(\d{1,2}:\d{2})\]")
 MIN_RELEVANCE_SCORE = 0.02  # Filter out very low-relevance search results
 
+# Common words excluded from keyword overlap check
+_STOP_WORDS = frozenset(
+    "a an the is are was were be been being do does did have has had "
+    "will would shall should can could may might must "
+    "i me my we our us you your he she it they them their "
+    "this that these those what which who whom how when where why "
+    "in on at to for of with by from up out about into over after "
+    "and or but not so if then than too also very "
+    "discuss discussed talk talked said tell told meeting "
+    "any some all each every no".split()
+)
+
+
+def _has_keyword_overlap(query: str, results: list[SearchResult]) -> bool:
+    """Check if the query's distinctive terms appear in any result text.
+
+    Returns False when none of the query's non-stopword terms appear in the
+    combined result text, indicating the results are likely false positives
+    from semantic similarity rather than genuine matches.
+    """
+    query_terms = {w.lower() for w in re.findall(r"[a-zA-Z]+", query)} - _STOP_WORDS
+    # Remove very short words that are likely not meaningful
+    query_terms = {t for t in query_terms if len(t) >= 3}
+    if not query_terms:
+        return True  # Only stopwords in query; cannot determine relevance
+    combined_text = " ".join(r.text.lower() for r in results)
+    return any(term in combined_text for term in query_terms)
+
 
 def _mmss_to_seconds(mmss: str) -> float:
     """Convert MM:SS string to float seconds."""
@@ -187,21 +215,34 @@ def handle_chat_message(
     Raises:
         ClaudeError: If the Claude CLI invocation fails.
     """
-    # 1. Search OpenSearch for relevant segments, filter by score threshold
+    # 1. Search OpenSearch for relevant segments, filter by relevance
     search_response = search(message)
     search_results = [r for r in search_response.results if r.score >= MIN_RELEVANCE_SCORE]
+    # Drop results when no query keywords appear in result text (false positives)
+    if search_results and not _has_keyword_overlap(message, search_results):
+        search_results = []
 
-    # 2. Prepare context file
+    # 2. Short-circuit when no relevant results and no existing conversation
+    if not search_results and conversation_id is None:
+        return ChatResponse(
+            message="I couldn't find any relevant information about that topic "
+            "in the video archive. Try rephrasing your question or asking "
+            "about a different topic.",
+            conversation_id=str(uuid.uuid4()),
+            citations=[],
+        )
+
+    # 3. Prepare context file
     context_path = prepare_context_file(search_results, message)
 
     try:
-        # 3. Build prompt
+        # 4. Build prompt
         prompt = build_prompt(message, context_path)
 
-        # 4. Call Claude
+        # 5. Call Claude
         claude_response = claude.query(prompt, conversation_id=conversation_id)
 
-        # 5. Extract and deduplicate citations
+        # 6. Extract and deduplicate citations
         citations = extract_citations(claude_response.result, search_results)
         citations = deduplicate_citations(citations)
 
@@ -211,5 +252,5 @@ def handle_chat_message(
             citations=citations,
         )
     finally:
-        # 6. Always clean up temp file
+        # 7. Always clean up temp file
         cleanup_context_file(context_path)

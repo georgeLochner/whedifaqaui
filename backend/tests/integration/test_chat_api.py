@@ -237,7 +237,7 @@ class TestChatClaudeError:
         mock_search.return_value = SINGLE_RESULT
         mock_claude.query.side_effect = ClaudeError("CLI crashed")
 
-        resp = client.post("/api/chat", json={"message": "test query"})
+        resp = client.post("/api/chat", json={"message": "migrate to Cognito"})
 
         assert resp.status_code == 500
         assert "unavailable" in resp.json()["detail"].lower()
@@ -260,7 +260,7 @@ class TestSummaryCitesMultipleSources:
             "was covered [Deploy Review @ 5:00]."
         )
 
-        resp = client.post("/api/chat", json={"message": "project overview"})
+        resp = client.post("/api/chat", json={"message": "Cognito deployment strategy"})
 
         assert resp.status_code == 200
         data = resp.json()
@@ -287,7 +287,7 @@ class TestSummarySynthesizesContent:
             "Together, these ensure secure and reliable releases."
         )
 
-        resp = client.post("/api/chat", json={"message": "How do releases work?"})
+        resp = client.post("/api/chat", json={"message": "How does the deployment strategy work?"})
 
         assert resp.status_code == 200
         data = resp.json()

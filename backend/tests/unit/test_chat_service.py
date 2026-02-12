@@ -11,6 +11,7 @@ from app.schemas.search import SearchResponse, SearchResult
 from app.services.chat import (
     CITATION_PATTERN,
     MAX_CONTEXT_CHARS,
+    _has_keyword_overlap,
     _mmss_to_seconds,
     build_prompt,
     cleanup_context_file,
@@ -395,21 +396,16 @@ class TestHandleChatMessage:
     @patch("app.services.chat.search")
     @patch("app.services.chat.claude")
     def test_handle_chat_empty_search(self, mock_claude, mock_search, tmp_path, monkeypatch):
-        """Claude is still called when search returns no results."""
+        """Short-circuit with canned response when search returns no results."""
         monkeypatch.setattr("app.services.chat.TEMP_DIR", tmp_path)
 
         mock_search.return_value = SearchResponse(count=0, results=[])
 
-        mock_claude.query.return_value = MagicMock(
-            result="I could not find relevant information.",
-            conversation_id="conv-456",
-        )
-
         response = handle_chat_message("Unknown topic")
 
         assert response.citations == []
-        assert response.conversation_id == "conv-456"
-        mock_claude.query.assert_called_once()
+        assert "couldn't find any relevant information" in response.message
+        mock_claude.query.assert_not_called()
 
     @patch("app.services.chat.search")
     @patch("app.services.chat.claude")
@@ -417,15 +413,16 @@ class TestHandleChatMessage:
         """Temp file is cleaned up even when Claude raises an error."""
         monkeypatch.setattr("app.services.chat.TEMP_DIR", tmp_path)
 
+        # Use text that contains the query keyword so keyword overlap passes
         mock_search.return_value = SearchResponse(
-            count=1, results=[_make_search_result()]
+            count=1, results=[_make_search_result(text="We discussed migration details.")]
         )
 
         from app.services.claude import ClaudeError
         mock_claude.query.side_effect = ClaudeError("CLI failed")
 
         with pytest.raises(ClaudeError):
-            handle_chat_message("test query")
+            handle_chat_message("migration details")
 
         # Temp file should still be cleaned up
         assert list(tmp_path.glob("context_*.json")) == []
@@ -445,6 +442,30 @@ class TestHandleChatMessage:
 
         _, kwargs = mock_claude.query.call_args
         assert kwargs["conversation_id"] == "existing-conv"
+
+
+# ---------------------------------------------------------------------------
+# Keyword overlap
+# ---------------------------------------------------------------------------
+
+class TestKeywordOverlap:
+    """Tests for _has_keyword_overlap relevance check."""
+
+    def test_relevant_query(self):
+        results = [_make_search_result(text="The permissions filter was added to Backdrop 1.24.")]
+        assert _has_keyword_overlap("permissions filter", results) is True
+
+    def test_irrelevant_query(self):
+        results = [_make_search_result(text="The permissions filter was added to Backdrop 1.24.")]
+        assert _has_keyword_overlap("quantum computing", results) is False
+
+    def test_all_stopwords_returns_true(self):
+        results = [_make_search_result(text="Some text.")]
+        assert _has_keyword_overlap("what did we do?", results) is True
+
+    def test_partial_overlap(self):
+        results = [_make_search_result(text="The team discussed deployment strategies.")]
+        assert _has_keyword_overlap("deployment and quantum computing", results) is True
 
 
 # ---------------------------------------------------------------------------
