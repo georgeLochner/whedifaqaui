@@ -186,9 +186,12 @@ class TestCitationExtractionNoCitations:
         assert citations == []
 
     def test_citation_extraction_unknown_video(self):
-        """Citations referencing unknown videos are skipped."""
+        """Citations referencing unknown videos are skipped when multiple videos exist."""
         text = "See [Unknown Video @ 1:00] for details."
-        results = [_make_search_result(video_title="Known Video")]
+        results = [
+            _make_search_result(video_id="vid-1", video_title="Known Video"),
+            _make_search_result(video_id="vid-2", video_title="Another Video", segment_id="seg-2"),
+        ]
 
         citations = extract_citations(text, results)
 

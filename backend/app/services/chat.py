@@ -87,6 +87,35 @@ def build_prompt(query: str, context_file_path: str) -> str:
     )
 
 
+def _match_video_title(cited_title: str, title_to_id: dict[str, str]) -> str | None:
+    """Match a cited title against known video titles.
+
+    Tries exact match first, then case-insensitive substring matching
+    to handle Claude abbreviating titles (e.g. "Meeting" for "Backdrop CMS Weekly Meeting").
+    """
+    # Exact match
+    if cited_title in title_to_id:
+        return title_to_id[cited_title]
+
+    cited_lower = cited_title.lower()
+    # Case-insensitive exact match
+    for full_title, vid in title_to_id.items():
+        if full_title.lower() == cited_lower:
+            return vid
+
+    # Substring match: cited title is contained in a known title
+    for full_title, vid in title_to_id.items():
+        if cited_lower in full_title.lower():
+            return vid
+
+    # If only one video in results, assume the citation refers to it
+    unique_ids = list(set(title_to_id.values()))
+    if len(unique_ids) == 1:
+        return unique_ids[0]
+
+    return None
+
+
 def extract_citations(
     response_text: str, search_results: list[SearchResult]
 ) -> list[Citation]:
@@ -106,20 +135,22 @@ def extract_citations(
 
     citations = []
     for title, mmss in matches:
-        video_id = title_to_id.get(title)
+        video_id = _match_video_title(title, title_to_id)
         if video_id is None:
             continue
         timestamp = _mmss_to_seconds(mmss)
-        # Find matching segment text
+        # Find matching segment text and resolve full title
         text = ""
+        resolved_title = title
         for sr in search_results:
             if sr.video_id == video_id:
                 text = sr.text
+                resolved_title = sr.video_title
                 break
         citations.append(
             Citation(
                 video_id=video_id,
-                video_title=title,
+                video_title=resolved_title,
                 timestamp=timestamp,
                 text=text,
             )
