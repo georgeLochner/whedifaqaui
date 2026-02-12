@@ -5,6 +5,7 @@
  * V1-F02  test_upload_form_validation
  * V1-F03  test_file_type_restriction
  * V1-F04  test_upload_progress_display
+ * V4-F01  test_date_field_required_in_upload
  */
 
 import { describe, it, expect, vi } from 'vitest'
@@ -66,6 +67,42 @@ describe('V1-F02: UploadForm validation', () => {
     fireEvent.click(screen.getByTestId('submit-btn'))
 
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// V1-F03: File input restricted to .mkv
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// V4-F01: Recording date field is required
+// ---------------------------------------------------------------------------
+
+describe('V4-F01: Date field required in upload', () => {
+  it('shows validation error when recording date is empty', () => {
+    render(<UploadForm onSubmit={vi.fn()} />)
+
+    // Fill title but leave date empty
+    fireEvent.change(screen.getByTestId('title-input'), {
+      target: { value: 'Sprint Review' },
+    })
+    fireEvent.click(screen.getByTestId('submit-btn'))
+
+    expect(screen.getByText('Recording date is required')).toBeInTheDocument()
+  })
+
+  it('does not show date error when date is provided', () => {
+    render(<UploadForm onSubmit={vi.fn()} />)
+
+    fireEvent.change(screen.getByTestId('title-input'), {
+      target: { value: 'Sprint Review' },
+    })
+    fireEvent.change(screen.getByTestId('date-input'), {
+      target: { value: '2023-01-05' },
+    })
+    fireEvent.click(screen.getByTestId('submit-btn'))
+
+    expect(screen.queryByText('Recording date is required')).not.toBeInTheDocument()
   })
 })
 
