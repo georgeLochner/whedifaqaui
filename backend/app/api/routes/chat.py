@@ -22,3 +22,6 @@ async def chat(request: ChatRequest):
     except subprocess.TimeoutExpired:
         logger.error("Claude request timed out")
         raise HTTPException(status_code=504, detail="AI response timed out")
+    except Exception as e:
+        logger.error(f"Unexpected error in chat: {e}")
+        raise HTTPException(status_code=500, detail="AI service temporarily unavailable")
