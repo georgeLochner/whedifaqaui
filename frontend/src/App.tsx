@@ -4,6 +4,7 @@ import LibraryPage from './pages/LibraryPage'
 import SearchPage from './pages/SearchPage'
 import UploadPage from './pages/UploadPage'
 import VideoPage from './pages/VideoPage'
+import WorkspacePage from './pages/WorkspacePage'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/videos/:id" element={<VideoPage />} />
+        <Route path="/workspace" element={<WorkspacePage />} />
       </Routes>
     </Layout>
   )

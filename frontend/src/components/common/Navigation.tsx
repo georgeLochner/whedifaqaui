@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Library', testId: 'nav-library' },
   { to: '/upload', label: 'Upload', testId: 'nav-upload' },
   { to: '/search', label: 'Search', testId: 'nav-search' },
+  { to: '/workspace', label: 'Workspace', testId: 'nav-workspace' },
 ] as const
 
 export default function Navigation() {
