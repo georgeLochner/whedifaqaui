@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { Citation } from '../../types/chat'
 import { useChat } from '../../hooks/useChat'
 import ChatHistory from '../chat/ChatHistory'
@@ -5,10 +6,24 @@ import ChatInput from '../chat/ChatInput'
 
 interface ConversationPanelProps {
   onCitationClick?: (citation: Citation) => void
+  onCitationsReceived?: (citations: Citation[]) => void
 }
 
-export default function ConversationPanel({ onCitationClick }: ConversationPanelProps) {
+export default function ConversationPanel({ onCitationClick, onCitationsReceived }: ConversationPanelProps) {
   const { messages, isLoading, error, sendMessage } = useChat()
+  const prevMessageCountRef = useRef(0)
+
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current) {
+      const newMessages = messages.slice(prevMessageCountRef.current)
+      for (const msg of newMessages) {
+        if (msg.role === 'assistant' && msg.citations && msg.citations.length > 0) {
+          onCitationsReceived?.(msg.citations)
+        }
+      }
+    }
+    prevMessageCountRef.current = messages.length
+  }, [messages, onCitationsReceived])
 
   return (
     <div data-testid="conversation-panel" className="flex flex-col h-full border-r border-gray-200">
