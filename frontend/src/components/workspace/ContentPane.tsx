@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ResultItem } from '../../hooks/useWorkspace'
 import type { TranscriptSegment } from '../../types/transcript'
+import type { DocumentDetail } from '../../types/document'
 import { getTranscript } from '../../api/videos'
+import { getDocument, downloadDocument } from '../../api/documents'
 import { useTranscriptSync } from '../../hooks/useTranscriptSync'
 import VideoPlayer from '../video/VideoPlayer'
 import TranscriptPanel from '../video/TranscriptPanel'
+import DocumentViewer from '../documents/DocumentViewer'
 
 interface ContentPaneProps {
   selectedResult: ResultItem | null
@@ -14,6 +17,7 @@ export default function ContentPane({ selectedResult }: ContentPaneProps) {
   const [segments, setSegments] = useState<TranscriptSegment[]>([])
   const [currentTime, setCurrentTime] = useState(0)
   const [seekTime, setSeekTime] = useState<number | undefined>(undefined)
+  const [documentDetail, setDocumentDetail] = useState<DocumentDetail | null>(null)
 
   const activeSegmentId = useTranscriptSync(segments, currentTime)
 
@@ -36,6 +40,24 @@ export default function ContentPane({ selectedResult }: ContentPaneProps) {
   }, [selectedResult?.videoId, selectedResult?.type])
 
   useEffect(() => {
+    if (selectedResult?.type !== 'document' || !selectedResult.documentId) {
+      setDocumentDetail(null)
+      return
+    }
+
+    let cancelled = false
+    getDocument(selectedResult.documentId)
+      .then((data) => {
+        if (!cancelled) setDocumentDetail(data)
+      })
+      .catch(() => {
+        if (!cancelled) setDocumentDetail(null)
+      })
+
+    return () => { cancelled = true }
+  }, [selectedResult?.documentId, selectedResult?.type])
+
+  useEffect(() => {
     if (selectedResult?.type === 'video' && selectedResult.timestamp != null) {
       setSeekTime(selectedResult.timestamp)
     }
@@ -49,6 +71,18 @@ export default function ContentPane({ selectedResult }: ContentPaneProps) {
     setCurrentTime(segment.start_time)
     setSeekTime(segment.start_time)
   }, [])
+
+  const handleDownload = useCallback(() => {
+    if (!selectedResult?.documentId) return
+    downloadDocument(selectedResult.documentId).then((blob) => {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${documentDetail?.title ?? 'document'}.md`
+      a.click()
+      URL.revokeObjectURL(url)
+    })
+  }, [selectedResult?.documentId, documentDetail?.title])
 
   return (
     <div data-testid="content-pane" className="flex flex-col h-full border-l border-gray-200 overflow-y-auto">
@@ -77,21 +111,16 @@ export default function ContentPane({ selectedResult }: ContentPaneProps) {
         </div>
       )}
 
-      {selectedResult?.type === 'document' && (
-        <div data-testid="document-viewer" className="flex flex-col h-full p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {selectedResult.documentTitle}
-          </h3>
-          <div className="flex-1" />
-          <div className="pt-4 border-t border-gray-200">
-            <button
-              data-testid="document-download"
-              type="button"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
-            >
-              Download
-            </button>
-          </div>
+      {selectedResult?.type === 'document' && documentDetail && (
+        <DocumentViewer
+          document={documentDetail}
+          onDownload={handleDownload}
+        />
+      )}
+
+      {selectedResult?.type === 'document' && !documentDetail && (
+        <div data-testid="document-loading" className="flex items-center justify-center h-full text-gray-400 text-sm">
+          Loading document...
         </div>
       )}
     </div>

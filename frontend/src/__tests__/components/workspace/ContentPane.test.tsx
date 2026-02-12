@@ -8,10 +8,11 @@
  * S9-F05  test_video_seeks_to_timestamp — seekTo prop matches timestamp
  * S9-F06  test_transcript_syncs_with_video — TranscriptPanel rendered
  * S9-F07  test_document_download_button — Download button visible
+ * S10-F05b test_content_pane_fetches_document — getDocument called with documentId
  */
 
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import ContentPane from '../../../components/workspace/ContentPane'
 import type { ResultItem } from '../../../hooks/useWorkspace'
 
@@ -45,8 +46,21 @@ const fakeTranscript = {
   count: 2,
 }
 
+const fakeDocumentDetail = {
+  id: 'doc-1',
+  title: 'Summary.md',
+  content: '# Summary\n\nThis is a **test** document.',
+  source_video_ids: ['vid-1'],
+  created_at: '2026-02-12T10:00:00Z',
+}
+
 vi.mock('../../../api/videos', () => ({
   getTranscript: vi.fn(),
+}))
+
+vi.mock('../../../api/documents', () => ({
+  getDocument: vi.fn(),
+  downloadDocument: vi.fn(),
 }))
 
 let capturedVideoPlayerProps: Record<string, unknown> = {}
@@ -62,6 +76,7 @@ vi.mock('video.js', () => ({ default: vi.fn() }))
 vi.mock('video.js/dist/video-js.css', () => ({}))
 
 import * as videosApi from '../../../api/videos'
+import * as documentsApi from '../../../api/documents'
 
 const videoResult: ResultItem = {
   id: 'vid-1-348',
@@ -83,6 +98,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   capturedVideoPlayerProps = {}
   vi.mocked(videosApi.getTranscript).mockResolvedValue(fakeTranscript)
+  vi.mocked(documentsApi.getDocument).mockResolvedValue(fakeDocumentDetail)
+  vi.mocked(documentsApi.downloadDocument).mockResolvedValue(new Blob(['# Summary']))
 })
 
 // ---------------------------------------------------------------------------
@@ -137,10 +154,38 @@ describe('S9-F03: Video mode', () => {
 // ---------------------------------------------------------------------------
 
 describe('S9-F04: Document mode', () => {
-  it('renders document viewer for document result', () => {
+  it('renders document viewer for document result', async () => {
     render(<ContentPane selectedResult={documentResult} />)
-    expect(screen.getByTestId('document-viewer')).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('document-viewer')).toBeTruthy()
+    })
     expect(screen.getByText('Summary.md')).toBeTruthy()
+  })
+
+  it('fetches document detail via getDocument', async () => {
+    render(<ContentPane selectedResult={documentResult} />)
+
+    await waitFor(() => {
+      expect(documentsApi.getDocument).toHaveBeenCalledWith('doc-1')
+    })
+  })
+
+  it('renders markdown content as HTML', async () => {
+    render(<ContentPane selectedResult={documentResult} />)
+
+    await waitFor(() => {
+      const content = screen.getByTestId('document-content')
+      expect(content.innerHTML).toContain('<h1>')
+      expect(content.innerHTML).toContain('<strong>')
+    })
+  })
+
+  it('shows loading state before document is fetched', () => {
+    vi.mocked(documentsApi.getDocument).mockReturnValue(new Promise(() => {}))
+    render(<ContentPane selectedResult={documentResult} />)
+
+    expect(screen.getByTestId('document-loading')).toBeTruthy()
   })
 })
 
@@ -185,9 +230,32 @@ describe('S9-F06: Transcript syncs with video', () => {
 // ---------------------------------------------------------------------------
 
 describe('S9-F07: Document download button', () => {
-  it('shows download button for document results', () => {
+  it('shows download button for document results', async () => {
     render(<ContentPane selectedResult={documentResult} />)
-    expect(screen.getByTestId('document-download')).toBeTruthy()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('document-download')).toBeTruthy()
+    })
     expect(screen.getByTestId('document-download').textContent).toBe('Download')
+  })
+
+  it('calls downloadDocument when download button is clicked', async () => {
+    // Mock URL.createObjectURL and URL.revokeObjectURL for jsdom
+    const mockCreateObjectURL = vi.fn().mockReturnValue('blob:test-url')
+    const mockRevokeObjectURL = vi.fn()
+    global.URL.createObjectURL = mockCreateObjectURL
+    global.URL.revokeObjectURL = mockRevokeObjectURL
+
+    render(<ContentPane selectedResult={documentResult} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('document-download')).toBeTruthy()
+    })
+
+    fireEvent.click(screen.getByTestId('document-download'))
+
+    await waitFor(() => {
+      expect(documentsApi.downloadDocument).toHaveBeenCalledWith('doc-1')
+    })
   })
 })

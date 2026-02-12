@@ -133,6 +133,54 @@ describe('useWorkspace hook', () => {
     expect(result.current.selectedResult!.id).toBe('vid-1-348')
   })
 
+  // ---------------------------------------------------------------------------
+  // S10-F05: addDocumentResult adds document to results
+  // ---------------------------------------------------------------------------
+
+  it('addDocumentResult adds document-type result (S10-F05)', () => {
+    const { result } = renderHook(() => useWorkspace())
+
+    act(() => {
+      result.current.addDocumentResult({ id: 'doc-1', title: 'Meeting Summary' })
+    })
+
+    expect(result.current.results).toHaveLength(1)
+    const item = result.current.results[0]
+    expect(item.id).toBe('doc-1')
+    expect(item.type).toBe('document')
+    expect(item.documentId).toBe('doc-1')
+    expect(item.documentTitle).toBe('Meeting Summary')
+  })
+
+  it('addDocumentResult deduplicates by id', () => {
+    const { result } = renderHook(() => useWorkspace())
+
+    act(() => {
+      result.current.addDocumentResult({ id: 'doc-1', title: 'Meeting Summary' })
+    })
+    expect(result.current.results).toHaveLength(1)
+
+    act(() => {
+      result.current.addDocumentResult({ id: 'doc-1', title: 'Meeting Summary' })
+    })
+    expect(result.current.results).toHaveLength(1)
+  })
+
+  it('addDocumentResult coexists with video results', () => {
+    const { result } = renderHook(() => useWorkspace())
+
+    act(() => {
+      result.current.addResult(makeCitation({ video_id: 'vid-1', timestamp: 100 }))
+    })
+    act(() => {
+      result.current.addDocumentResult({ id: 'doc-1', title: 'Summary' })
+    })
+
+    expect(result.current.results).toHaveLength(2)
+    expect(result.current.results[0].type).toBe('video')
+    expect(result.current.results[1].type).toBe('document')
+  })
+
   it('results persist across re-renders (S8-F07)', () => {
     const { result, rerender } = renderHook(() => useWorkspace())
 

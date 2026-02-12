@@ -29,6 +29,7 @@ export interface UseWorkspaceReturn {
   selectedResult: ResultItem | null
   addResult: (citation: Citation) => void
   addResults: (citations: Citation[]) => void
+  addDocumentResult: (doc: { id: string; title: string }) => void
   selectResult: (result: ResultItem) => void
 }
 
@@ -76,9 +77,22 @@ export function useWorkspace(): UseWorkspaceReturn {
     })
   }, [])
 
+  const addDocumentResult = useCallback((doc: { id: string; title: string }) => {
+    const item: ResultItem = {
+      id: doc.id,
+      type: 'document',
+      documentId: doc.id,
+      documentTitle: doc.title,
+    }
+    setResults((prev) => {
+      if (prev.some((r) => r.id === item.id)) return prev
+      return [...prev, item]
+    })
+  }, [])
+
   const selectResult = useCallback((result: ResultItem) => {
     setSelectedResult(result)
   }, [])
 
-  return { results, selectedResult, addResult, addResults, selectResult }
+  return { results, selectedResult, addResult, addResults, addDocumentResult, selectResult }
 }
