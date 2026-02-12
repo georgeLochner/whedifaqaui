@@ -12,11 +12,11 @@ User question: {question}
 
 Instructions:
 - Read the context file first
-- Answer based ONLY on the context provided
-- Cite sources using [Video Title @ MM:SS] format
+- Answer based on the context provided AND any relevant conversation history
+- For follow-up questions, use our previous conversation to understand what the user is referring to
+- Cite sources using the EXACT video_title from the context file in [Video Title @ MM:SS] format
 - If the context doesn't contain relevant information, say so clearly
-- Be concise but thorough
-- You can reference previous messages in our conversation"""
+- Be concise but thorough"""
 
 DOCUMENT_PROMPT = """Generate a summary document based on video transcript content.
 

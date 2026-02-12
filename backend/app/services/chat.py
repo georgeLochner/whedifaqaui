@@ -16,6 +16,7 @@ TEMP_DIR = Path("/data/temp")
 MAX_CONTEXT_CHARS = 32000  # ~8000 tokens, context truncation limit
 
 CITATION_PATTERN = re.compile(r"\[([^\]]+?)\s*@\s*(\d{1,2}:\d{2})\]")
+MIN_RELEVANCE_SCORE = 0.02  # Filter out very low-relevance search results
 
 
 def _mmss_to_seconds(mmss: str) -> float:
@@ -186,9 +187,9 @@ def handle_chat_message(
     Raises:
         ClaudeError: If the Claude CLI invocation fails.
     """
-    # 1. Search OpenSearch for relevant segments
+    # 1. Search OpenSearch for relevant segments, filter by score threshold
     search_response = search(message)
-    search_results = search_response.results
+    search_results = [r for r in search_response.results if r.score >= MIN_RELEVANCE_SCORE]
 
     # 2. Prepare context file
     context_path = prepare_context_file(search_results, message)
