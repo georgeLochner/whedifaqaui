@@ -1,4 +1,5 @@
 # Pydantic schemas package
+from app.schemas.chat import ChatRequest, ChatResponse, Citation
 from app.schemas.video import (
     VALID_TRANSITIONS,
     VideoCreate,
@@ -9,6 +10,9 @@ from app.schemas.video import (
 )
 
 __all__ = [
+    "ChatRequest",
+    "ChatResponse",
+    "Citation",
     "VideoCreate",
     "VideoListResponse",
     "VideoResponse",
