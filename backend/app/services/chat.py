@@ -1,0 +1,183 @@
+import json
+import logging
+import re
+import uuid
+from pathlib import Path
+
+from app.schemas.chat import ChatResponse, Citation
+from app.schemas.search import SearchResult
+from app.services.claude import ClaudeError, claude
+from app.services.prompt import QUICK_MODE_PROMPT
+from app.services.search import search
+
+logger = logging.getLogger(__name__)
+
+TEMP_DIR = Path("/data/temp")
+MAX_CONTEXT_CHARS = 32000  # ~8000 tokens, context truncation limit
+
+CITATION_PATTERN = re.compile(r"\[([^\]]+?)\s*@\s*(\d{1,2}:\d{2})\]")
+
+
+def _mmss_to_seconds(mmss: str) -> float:
+    """Convert MM:SS string to float seconds."""
+    parts = mmss.split(":")
+    return int(parts[0]) * 60 + int(parts[1])
+
+
+def truncate_context(segments: list[dict], max_chars: int = MAX_CONTEXT_CHARS) -> list[dict]:
+    """Truncate segment list so total text length stays under max_chars.
+
+    Returns the prefix of segments whose cumulative text fits within the limit.
+    """
+    result = []
+    total = 0
+    for seg in segments:
+        text_len = len(seg.get("text", ""))
+        if total + text_len > max_chars and result:
+            break
+        result.append(seg)
+        total += text_len
+    return result
+
+
+def prepare_context_file(segments: list[SearchResult], query: str) -> str:
+    """Write search results as a JSON context file for Claude.
+
+    Args:
+        segments: Search results to include as context.
+        query: The user's original query.
+
+    Returns:
+        Absolute file path of the created context file.
+    """
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+    seg_dicts = [
+        {
+            "video_id": s.video_id,
+            "video_title": s.video_title,
+            "timestamp": s.start_time,
+            "text": s.text,
+            "speaker": s.speaker,
+            "recording_date": s.recording_date,
+        }
+        for s in segments
+    ]
+
+    seg_dicts = truncate_context(seg_dicts, MAX_CONTEXT_CHARS)
+
+    context = {"query": query, "segments": seg_dicts}
+
+    file_path = TEMP_DIR / f"context_{uuid.uuid4()}.json"
+    file_path.write_text(json.dumps(context, indent=2))
+
+    return str(file_path)
+
+
+def cleanup_context_file(file_path: str) -> None:
+    """Delete a temporary context file."""
+    Path(file_path).unlink(missing_ok=True)
+
+
+def build_prompt(query: str, context_file_path: str) -> str:
+    """Format the quick-mode prompt template with query and context file path."""
+    return QUICK_MODE_PROMPT.format(
+        context_file_path=context_file_path,
+        question=query,
+    )
+
+
+def extract_citations(
+    response_text: str, search_results: list[SearchResult]
+) -> list[Citation]:
+    """Extract [Video Title @ MM:SS] citations from Claude's response.
+
+    Matches citation patterns against search_results to resolve video_id.
+    Returns an empty list when no citations are found.
+    """
+    matches = CITATION_PATTERN.findall(response_text)
+    if not matches:
+        return []
+
+    # Build a lookup from video title -> video_id
+    title_to_id: dict[str, str] = {}
+    for sr in search_results:
+        title_to_id[sr.video_title] = sr.video_id
+
+    citations = []
+    for title, mmss in matches:
+        video_id = title_to_id.get(title)
+        if video_id is None:
+            continue
+        timestamp = _mmss_to_seconds(mmss)
+        # Find matching segment text
+        text = ""
+        for sr in search_results:
+            if sr.video_id == video_id:
+                text = sr.text
+                break
+        citations.append(
+            Citation(
+                video_id=video_id,
+                video_title=title,
+                timestamp=timestamp,
+                text=text,
+            )
+        )
+
+    return citations
+
+
+def deduplicate_citations(citations: list[Citation]) -> list[Citation]:
+    """Remove duplicate citations (same video_id + timestamp), preserving order."""
+    seen: set[tuple[str, float]] = set()
+    result = []
+    for c in citations:
+        key = (c.video_id, c.timestamp)
+        if key not in seen:
+            seen.add(key)
+            result.append(c)
+    return result
+
+
+def handle_chat_message(
+    message: str, conversation_id: str | None = None
+) -> ChatResponse:
+    """Orchestrate the full chat flow: search → context → Claude → response.
+
+    Args:
+        message: The user's chat message.
+        conversation_id: Optional ID to resume an existing conversation.
+
+    Returns:
+        ChatResponse with Claude's answer, conversation ID, and citations.
+
+    Raises:
+        ClaudeError: If the Claude CLI invocation fails.
+    """
+    # 1. Search OpenSearch for relevant segments
+    search_response = search(message)
+    search_results = search_response.results
+
+    # 2. Prepare context file
+    context_path = prepare_context_file(search_results, message)
+
+    try:
+        # 3. Build prompt
+        prompt = build_prompt(message, context_path)
+
+        # 4. Call Claude
+        claude_response = claude.query(prompt, conversation_id=conversation_id)
+
+        # 5. Extract and deduplicate citations
+        citations = extract_citations(claude_response.result, search_results)
+        citations = deduplicate_citations(citations)
+
+        return ChatResponse(
+            message=claude_response.result,
+            conversation_id=claude_response.conversation_id,
+            citations=citations,
+        )
+    finally:
+        # 6. Always clean up temp file
+        cleanup_context_file(context_path)
