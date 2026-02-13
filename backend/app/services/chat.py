@@ -222,13 +222,13 @@ def handle_chat_message(
     if search_results and not _has_keyword_overlap(message, search_results):
         search_results = []
 
-    # 2. Short-circuit when no relevant results and no existing conversation
-    if not search_results and conversation_id is None:
+    # 2. Short-circuit when no relevant results
+    if not search_results:
         return ChatResponse(
             message="I couldn't find any relevant information about that topic "
             "in the video archive. Try rephrasing your question or asking "
             "about a different topic.",
-            conversation_id=str(uuid.uuid4()),
+            conversation_id=conversation_id or str(uuid.uuid4()),
             citations=[],
         )
 
