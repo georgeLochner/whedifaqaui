@@ -16,7 +16,7 @@ TEMP_DIR = Path("/data/temp")
 MAX_CONTEXT_CHARS = 32000  # ~8000 tokens, context truncation limit
 
 CITATION_PATTERN = re.compile(r"\[([^\]]+?)\s*@\s*(\d{1,2}:\d{2})\]")
-MIN_RELEVANCE_SCORE = 0.02  # Filter out very low-relevance search results
+MIN_RELEVANCE_SCORE = 0.005  # Below single-list RRF min of 1/61 ≈ 0.0164
 
 # Common words excluded from keyword overlap check
 _STOP_WORDS = frozenset(
