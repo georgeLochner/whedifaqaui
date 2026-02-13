@@ -1,0 +1,6 @@
+2026-02-13 16:34:31 - Starting Claude agent
+  Model: opus
+  Max runtime: 7200s
+  Extended thinking: 10000 tokens
+2026-02-13 16:34:31 - Background logger started (PID: 12986)
+2026-02-13 16:34:31 - Central log: logs/coder-w-7me.log
