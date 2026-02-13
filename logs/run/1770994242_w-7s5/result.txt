@@ -1,0 +1,9 @@
+Done. Here's the summary:
+
+**Fix**: Removed the `conversation_id is None` condition from the empty-results short-circuit at `backend/app/services/chat.py:226`. Now when search returns no results, the system always returns the "no relevant information" message — even in an existing conversation. The existing `conversation_id` is preserved in the response so the conversation chain isn't broken.
+
+**Verification**: On the workspace page, asked "What was discussed about the Backdrop CMS release?" (got a full answer with citations), then followed up with "What is the capital of France?" — correctly received "I couldn't find any relevant information" instead of a repeated stale answer.
+
+---
+session_id: bbab39d0-2ade-4114-8af6-9290e0bb989a
+free_space: 121.6k (60.8%)

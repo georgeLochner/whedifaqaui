@@ -1,0 +1,16 @@
+Investigation complete. Here's a summary of the 3 bugs identified:
+
+### Bug 1: `w-qck` — MIN_RELEVANCE_SCORE=0.02 filters out valid results
+- **Root cause**: `chat.py:19` sets `MIN_RELEVANCE_SCORE = 0.02`, but RRF scores for documents found by only one search method (BM25 or kNN) are ~0.016 — below the threshold
+- **Impact**: Queries like "Who is Jen Lampton?" return zero results despite the data existing in the index
+- **Fix**: Lower threshold to ~0.01
+
+### Bug 2: `w-7s5` — Follow-up chat with empty results repeats stale answer
+- **Root cause**: `chat.py:226` only short-circuits when `conversation_id is None`. When a conversation exists but search returns nothing, an empty context file is sent to Claude via `--resume`, causing it to repeat the previous answer verbatim
+- **Impact**: Users see irrelevant repeated answers with 0 citations
+- **Fix**: Handle empty results explicitly even with existing conversations
+
+### Bug 3: `w-6qd` — Citation text ignores timestamp, all show same text
+- **Root cause**: `extract_citations()` at `chat.py:174` matches by `video_id` only and `break`s at the first match — all citations from the same video get identical text
+- **Impact**: Results panel shows the same text snippet for every citation
+- **Fix**: Match by both `video_id` and closest timestamp

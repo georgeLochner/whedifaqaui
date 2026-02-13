@@ -1,0 +1,11 @@
+Done. Here's a summary:
+
+**Fix**: Changed `MIN_RELEVANCE_SCORE` from `0.02` to `0.005` in `backend/app/services/chat.py:19`.
+
+**Root cause**: RRF scores use `1/(k+rank)` with k=60. A document at rank 1 in only one search method (BM25 or kNN) scores ~0.0164, which was below the 0.02 threshold. This caused all single-method results to be incorrectly filtered out.
+
+**Verification**: Tested "Who is Jen Lampton?" on the workspace page — it now returns 4 relevant results from the Backdrop CMS Weekly Meeting with correct citations, instead of the previous "I don't know" response.
+
+---
+session_id: bbab39d0-2ade-4114-8af6-9290e0bb989a
+free_space: 132k (66.0%)

@@ -1,0 +1,9 @@
+Done.
+
+**Fix**: In `extract_citations()` at `backend/app/services/chat.py:171-178`, replaced the `break`-on-first-`video_id`-match with closest-timestamp matching. For each citation, the code now iterates all search results for that video and picks the one whose `start_time` is nearest to the cited timestamp.
+
+**Verification**: Asked "What new features were added to Backdrop CMS 1.24?" — the 4 citations at timestamps 3:06, 5:48, 7:55, and 6:34 each show distinct, correct transcript text corresponding to their respective segments.
+
+---
+session_id: bbab39d0-2ade-4114-8af6-9290e0bb989a
+free_space: 114.8k (57.4%)
