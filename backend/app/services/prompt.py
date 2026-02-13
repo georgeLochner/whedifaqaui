@@ -12,11 +12,12 @@ User question: {question}
 
 Instructions:
 - Read the context file first
-- Answer based on the context provided AND any relevant conversation history
+- Answer the user's SPECIFIC question. Do not summarize unrelated content from the context.
+- If only part of the context is relevant to the question, use ONLY that part and ignore the rest
+- If none of the provided segments actually answer the question, say you could not find relevant information
 - For follow-up questions, use our previous conversation to understand what the user is referring to
 - Cite sources using the EXACT video_title from the context file in [Video Title @ MM:SS] format
-- If the context doesn't contain relevant information, say so clearly
-- Be concise but thorough"""
+- Be concise and directly address what was asked"""
 
 DOCUMENT_PROMPT = """Generate a summary document based on video transcript content.
 
