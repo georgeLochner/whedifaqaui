@@ -1,0 +1,13 @@
+Done. Here's a summary of the fix:
+
+**Bug**: `_has_keyword_overlap` checked if query keywords appeared in the **combined text** of all search results. If even one result contained a keyword, all results passed — including irrelevant ones.
+
+**Fix**: Renamed to `_filter_by_keyword_overlap` and changed it from a batch boolean check to a per-result filter. Each individual search result must contain at least one query keyword to be kept. For "who contracted covid", this reduces results from 4 to 1 (only the segment mentioning COVID).
+
+**Verification**: Backend filtering confirmed working — only 1 segment (the one mentioning Tim Erickson recovering from COVID) passes. The remaining answer-quality issue (Claude answering about Backdrop features instead of COVID despite correct context) is a prompt-level problem tracked by the downstream task w-cfr.
+
+**Tests**: All new and updated tests pass (29/30, with 1 pre-existing unrelated failure).
+
+---
+session_id: fbadffd3-8108-485a-9413-804900270146
+free_space: 96.6k (48.3%)
