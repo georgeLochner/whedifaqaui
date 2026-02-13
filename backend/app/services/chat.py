@@ -31,20 +31,19 @@ _STOP_WORDS = frozenset(
 )
 
 
-def _has_keyword_overlap(query: str, results: list[SearchResult]) -> bool:
-    """Check if the query's distinctive terms appear in any result text.
+def _filter_by_keyword_overlap(query: str, results: list[SearchResult]) -> list[SearchResult]:
+    """Keep only results where at least one query keyword appears in that result's text.
 
-    Returns False when none of the query's non-stopword terms appear in the
-    combined result text, indicating the results are likely false positives
-    from semantic similarity rather than genuine matches.
+    Filters out results that are likely false positives from semantic similarity
+    rather than genuine matches — each result must individually contain a query keyword.
+    Returns all results unchanged if the query contains only stopwords.
     """
     query_terms = {w.lower() for w in re.findall(r"[a-zA-Z]+", query)} - _STOP_WORDS
     # Remove very short words that are likely not meaningful
     query_terms = {t for t in query_terms if len(t) >= 3}
     if not query_terms:
-        return True  # Only stopwords in query; cannot determine relevance
-    combined_text = " ".join(r.text.lower() for r in results)
-    return any(term in combined_text for term in query_terms)
+        return results  # Only stopwords in query; cannot determine relevance
+    return [r for r in results if any(term in r.text.lower() for term in query_terms)]
 
 
 def _mmss_to_seconds(mmss: str) -> float:
@@ -221,9 +220,8 @@ def handle_chat_message(
     # 1. Search OpenSearch for relevant segments, filter by relevance
     search_response = search(message)
     search_results = [r for r in search_response.results if r.score >= MIN_RELEVANCE_SCORE]
-    # Drop results when no query keywords appear in result text (false positives)
-    if search_results and not _has_keyword_overlap(message, search_results):
-        search_results = []
+    # Drop individual results where no query keywords appear (false positives)
+    search_results = _filter_by_keyword_overlap(message, search_results)
 
     # 2. Short-circuit when no relevant results
     if not search_results:

@@ -11,7 +11,7 @@ from app.schemas.search import SearchResponse, SearchResult
 from app.services.chat import (
     CITATION_PATTERN,
     MAX_CONTEXT_CHARS,
-    _has_keyword_overlap,
+    _filter_by_keyword_overlap,
     _mmss_to_seconds,
     build_prompt,
     cleanup_context_file,
@@ -449,23 +449,38 @@ class TestHandleChatMessage:
 # ---------------------------------------------------------------------------
 
 class TestKeywordOverlap:
-    """Tests for _has_keyword_overlap relevance check."""
+    """Tests for _filter_by_keyword_overlap per-result relevance filter."""
 
     def test_relevant_query(self):
         results = [_make_search_result(text="The permissions filter was added to Backdrop 1.24.")]
-        assert _has_keyword_overlap("permissions filter", results) is True
+        filtered = _filter_by_keyword_overlap("permissions filter", results)
+        assert len(filtered) == 1
 
     def test_irrelevant_query(self):
         results = [_make_search_result(text="The permissions filter was added to Backdrop 1.24.")]
-        assert _has_keyword_overlap("quantum computing", results) is False
+        filtered = _filter_by_keyword_overlap("quantum computing", results)
+        assert len(filtered) == 0
 
-    def test_all_stopwords_returns_true(self):
+    def test_all_stopwords_returns_all(self):
         results = [_make_search_result(text="Some text.")]
-        assert _has_keyword_overlap("what did we do?", results) is True
+        filtered = _filter_by_keyword_overlap("what did we do?", results)
+        assert len(filtered) == 1
 
     def test_partial_overlap(self):
         results = [_make_search_result(text="The team discussed deployment strategies.")]
-        assert _has_keyword_overlap("deployment and quantum computing", results) is True
+        filtered = _filter_by_keyword_overlap("deployment and quantum computing", results)
+        assert len(filtered) == 1
+
+    def test_filters_per_result(self):
+        """Only results containing a query keyword are kept."""
+        results = [
+            _make_search_result(segment_id="seg-1", text="Tim is just recovering from COVID."),
+            _make_search_result(segment_id="seg-2", text="Backdrop 1.24 adds new features."),
+            _make_search_result(segment_id="seg-3", text="The permissions filter was updated."),
+        ]
+        filtered = _filter_by_keyword_overlap("who contracted covid", results)
+        assert len(filtered) == 1
+        assert filtered[0].segment_id == "seg-1"
 
 
 # ---------------------------------------------------------------------------
