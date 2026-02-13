@@ -1,0 +1,10 @@
+Task w-dnx.2 is complete. Created:
+
+- **`frontend/src/hooks/useWorkspace.ts`** — Hook managing `results[]`, `selectedResult`, `addResult`, `addResults`, `selectResult` with deduplication by `${video_id}-${Math.floor(timestamp)}`
+- **`frontend/src/__tests__/hooks/useWorkspace.test.ts`** — 8 unit tests covering initialization, Citation→ResultItem conversion, accumulation (S8-F06), deduplication, batch operations, selection, and re-render persistence (S8-F07)
+
+All 8 tests pass. This unblocks w-dnx.3 (ResultsPanel) and w-dnx.4 (ContentPane).
+
+---
+session_id: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+free_space: 94k (47.0%)

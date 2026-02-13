@@ -1,0 +1,12 @@
+Task w-dnx.5 is complete. Changes made:
+
+- **`frontend/src/components/workspace/ConversationPanel.tsx`** — Added `onCitationsReceived` prop that fires when new assistant messages arrive with citations
+- **`frontend/src/pages/WorkspacePage.tsx`** — Wired `useWorkspace` hook, replaced stub panels with real `ResultsPanel` and `ContentPane`, connected citation click → add result + select, and chat response → results accumulation
+- **`frontend/src/__tests__/components/workspace/ResultsPanel.integration.test.tsx`** — 7 integration tests covering S8-I01, S8-I02, S9-I01, S9-I02, S9-I03
+- **`frontend/src/__tests__/pages/WorkspacePage.test.tsx`** — Updated to mock new dependencies, all 7 existing tests still pass
+
+All 14 tests pass across both test files plus 5 existing ConversationPanel tests unaffected. This unblocks w-dnx.6 (E2E verification).
+
+---
+session_id: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+free_space: 54.1k (27.0%)

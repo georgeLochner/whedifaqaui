@@ -1,0 +1,11 @@
+Task w-a4r.4 is complete.
+
+Created:
+- **`backend/app/api/routes/videos.py`** - POST /api/videos (multipart upload with metadata), GET /api/videos (paginated list), GET /api/videos/{id} (detail), GET /api/videos/{id}/status (polling)
+- **`backend/app/main.py`** - Mounted videos router at /api prefix
+
+Verified: GET /api/videos returns `{"videos": [], "total": 0}`, health endpoint still works.
+
+---
+session_id: 8470b467-bf6e-444a-bb0c-08d2728ea386
+free_space: 66.6k (33.3%)

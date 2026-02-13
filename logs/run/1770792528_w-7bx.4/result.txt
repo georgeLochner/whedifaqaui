@@ -1,0 +1,19 @@
+Task w-7bx.4 is complete. Here's what was delivered:
+
+**Components created:**
+- `frontend/src/components/video/VideoPlayer.tsx` — HTML5 video player using Video.js 8.6.x with controls, streaming source from `/api/videos/{id}/stream`, optional `initialTime` seek, and `onTimeUpdate` callback
+- `frontend/src/components/video/TranscriptPanel.tsx` — Scrollable transcript panel with active segment highlighting (CSS `active` class), click-to-seek, speaker labels, and auto-scroll via `scrollIntoView`
+- `frontend/src/components/video/TimestampLink.tsx` — Clickable timestamp button using `formatTimestamp` utility
+
+**Tests created (11 tests, all passing):**
+- `VideoPlayer.test.tsx` — P1-F01 (renders), P1-F02 (controls enabled), P1-F03 (source URL)
+- `TranscriptPanel.test.tsx` — P3-F01 (renders segments), P3-F02 (active highlighting), P3-F03 (click seeks), P3-F04 (auto-scroll), P3-F05 (speaker labels)
+- `TimestampLink.test.tsx` — P2-F01 (renders formatted time), P2-F02 (click callback)
+
+**Dependency added:** `video.js: ^8.6.1` to package.json
+
+**Verification:** All 32 frontend tests pass (11 new + 21 existing), zero regressions.
+
+---
+session_id: 25e3b3a9-2331-44c4-a091-749d628c95e6
+free_space: 111.1k (55.6%)

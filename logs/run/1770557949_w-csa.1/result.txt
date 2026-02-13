@@ -1,0 +1,17 @@
+Task w-csa.1 is complete. I created 7 implementation tasks for the Video Processing Pipeline feature:
+
+| Task | Description | Files |
+|------|-------------|-------|
+| **w-csa.2** | FFmpeg service + video processing Celery task | `services/ffmpeg.py`, `tasks/video_processing.py` |
+| **w-csa.3** | Transcription service + Celery task | `services/transcription.py`, `tasks/transcription.py` |
+| **w-csa.4** | Embedding + chunking services | `services/embedding.py`, `services/chunking.py` |
+| **w-csa.5** | Chunking + indexing tasks + pipeline chain | `tasks/chunking.py`, `tasks/indexing.py`, `tasks/celery_app.py` |
+| **w-csa.6** | Unit tests (V2-U01–U04, C1-U01–U04, P1-U01–U02) | `tests/unit/test_transcription.py`, `test_chunking.py`, `test_embedding.py` |
+| **w-csa.7** | Integration tests (V2-I01–I05, V3-I01, C1-I01–I03) | `tests/integration/test_processing_pipeline.py` |
+| **w-csa.8** | E2E verification (all E2E scenarios) | Final verification task |
+
+Dependencies chain sequentially: w-csa.2 → w-csa.3 → ... → w-csa.8. Closing w-csa.1 unblocks w-csa.2.
+
+---
+session_id: 337c7d14-76d5-41b1-9457-0b993b11791f
+free_space: 105.7k (52.8%)

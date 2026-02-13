@@ -1,0 +1,14 @@
+Task w-6nz.2 is complete. Here's a summary of what was done:
+
+**Files modified:**
+- `docker-compose.yml` — Updated to match design docs: corrected OpenSearch version (2.11.1), pinned Redis version (7.2.4-alpine), added `ulimits`/`bootstrap.memory_lock` for OpenSearch, renamed worker service (`celery-worker` → `worker`), switched build contexts from `docker/` to `./backend` and `./frontend`, added named volumes (redis_data, video_data, transcript_data, model_cache), added WHISPER_MODEL/WHISPER_DEVICE env vars to worker, included commented-out GPU worker section
+- `.env.example` — Simplified to user-facing variables only: POSTGRES_PASSWORD, SECRET_KEY, WHISPER_MODEL, WHISPER_DEVICE
+
+**File created:**
+- `docker-compose.dev.yml` — Development overrides with hot-reload (`--reload` for uvicorn) and source bind mounts for backend, worker, and frontend
+
+**Verification:** Both `docker compose config` and `docker compose -f docker-compose.yml -f docker-compose.dev.yml config` validated without errors.
+
+---
+session_id: afd773a6-d856-40bd-94c9-8f7037bd9b95
+free_space: 106.7k (53.4%)

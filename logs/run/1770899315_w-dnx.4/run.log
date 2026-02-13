@@ -1,0 +1,7 @@
+2026-02-12 14:28:40 - Starting Claude agent
+  Model: opus
+  Resuming session: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+  Max runtime: 7200s
+2026-02-12 14:28:40 - Background logger started (PID: 439326)
+2026-02-12 14:28:40 - Central log: logs/coder-w-dnx.log
+2026-02-12 14:30:05 - Agent completed (exit code: 0)

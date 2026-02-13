@@ -1,0 +1,24 @@
+Task w-qfs.4 is complete. Here's what was delivered:
+
+**`backend/app/api/routes/chat.py`** — POST `/api/chat` endpoint that:
+- Accepts `ChatRequest` (message + optional conversation_id)
+- Delegates to `handle_chat_message()` from the chat service
+- Returns `ChatResponse` with message, conversation_id, and citations
+- Handles `ClaudeError` → HTTP 500, `TimeoutExpired` → HTTP 504
+
+**`backend/app/main.py`** — Registered the chat router with `prefix="/api", tags=["chat"]`
+
+**`backend/tests/integration/test_chat_api.py`** — 9 integration tests all passing:
+- S7-I01: New conversation
+- S7-I02: Resume conversation
+- S7-I03: Search triggered
+- S7-I04: Context preparation
+- S7-I05: Citations in response
+- S7-I06: Empty search results
+- S7-I07: Claude error → 500
+- S2-I01: Multiple source citations
+- S2-I02: Content synthesis
+
+---
+session_id: 18b9206a-0cbf-42ff-af48-12c46cec574f
+free_space: 101.9k (51.0%)

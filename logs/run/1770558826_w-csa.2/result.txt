@@ -1,0 +1,10 @@
+Task w-csa.2 is complete. Created two files:
+
+- **`backend/app/services/ffmpeg.py`** - FFmpeg wrapper with `remux_to_mp4` (stream copy with transcode fallback), `extract_audio` (16kHz mono WAV), `generate_thumbnail` (320x180 at 10% duration), and `get_duration` (ffprobe)
+- **`backend/app/tasks/video_processing.py`** - `process_video` Celery task that runs the FFmpeg pipeline, updates video record with processed_path/thumbnail_path/duration, chains to transcription, and handles errors by setting status to ERROR
+
+All 42 existing tests pass with no regressions.
+
+---
+session_id: 337c7d14-76d5-41b1-9457-0b993b11791f
+free_space: 92.8k (46.4%)

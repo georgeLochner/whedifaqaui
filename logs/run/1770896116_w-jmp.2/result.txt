@@ -1,0 +1,10 @@
+Task w-jmp.2 is complete.
+
+**Summary:**
+- Created `backend/app/services/claude.py` — `ClaudeService` class with `query()` and `query_json()` methods, `ClaudeError` exception, `ClaudeResponse` dataclass, and singleton `claude` instance
+- Created `backend/tests/unit/test_claude.py` — 7 unit tests (S7-U01 through S7-U07) covering command construction, response parsing, error handling, timeout handling, and conversation ID management
+- All 90 unit tests pass (7 new + 83 existing, no regressions)
+
+---
+session_id: 409e468d-3afc-45e1-af55-376d163747db
+free_space: 89.7k (44.9%)

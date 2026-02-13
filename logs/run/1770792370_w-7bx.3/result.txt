@@ -1,0 +1,17 @@
+Task w-7bx.3 is complete. Here's what was delivered:
+
+**Files created:**
+- `frontend/src/types/transcript.ts` — `TranscriptSegment` and `TranscriptResponse` interfaces
+- `frontend/src/utils/timestamp.ts` — `formatTimestamp()` and `parseTimestamp()` utilities
+- `frontend/src/hooks/useVideoPlayer.ts` — Custom hook managing player state (currentTime, isPlaying, seek, videoRef)
+- `frontend/src/hooks/useTranscriptSync.ts` — Custom hook finding active segment based on currentTime
+- `frontend/src/__tests__/utils/timestamp.test.ts` — 5 unit tests covering P2-U01 and P2-U02
+
+**Files modified:**
+- `frontend/src/api/videos.ts` — Added `getTranscript(videoId)` API function
+
+**Verification:** All 21 frontend tests pass (5 new + 16 existing), no regressions.
+
+---
+session_id: 25e3b3a9-2331-44c4-a091-749d628c95e6
+free_space: 133.7k (66.8%)

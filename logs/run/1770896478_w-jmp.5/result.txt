@@ -1,0 +1,9 @@
+Task w-jmp.5 complete. The Claude Wrapper Module & Recording Date feature (w-jmp) is fully verified and closed:
+
+- **All 14 test IDs pass**: S7-U01–U07 (Claude wrapper), V4-U01–U03 (recording date unit), V4-I01–I03 (recording date integration), V4-F01 (frontend upload form)
+- **Added**: `recording_date` field to `SearchResult` schema and search service, plus V4-I01 and V4-I02 integration tests that were missing
+- **Regression check**: 159 backend + 69 frontend tests all green, health endpoint OK
+
+---
+session_id: 1c1048a1-fde3-4c85-9189-a0bf38ab3b89
+free_space: 111.8k (55.9%)

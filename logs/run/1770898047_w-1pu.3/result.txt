@@ -1,0 +1,12 @@
+Task w-1pu.3 complete. Created 4 chat components with 22 passing tests:
+
+- **Citation** — Clickable `[Video Title @ MM:SS]` element using `formatTimestamp`
+- **ChatInput** — Text input + Send button, disables during loading, submits on Enter/click
+- **ChatMessage** — Differentiates user/AI messages, parses `[Title @ MM:SS]` patterns inline as Citation components
+- **ChatHistory** — Scrollable message list with auto-scroll to bottom
+
+All test IDs covered: S7-F01, S7-F02, S7-F03, S7-F06, S7-F07.
+
+---
+session_id: 59088121-944b-42d8-9d72-a08a3e111446
+free_space: 78.8k (39.4%)

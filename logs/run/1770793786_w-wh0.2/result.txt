@@ -1,0 +1,9 @@
+Task w-wh0.2 is complete. Changes made:
+
+1. **`frontend/src/api/search.ts`** (new) - Created `searchVideos(query, limit?)` function that calls `GET /search?q={query}&limit={limit}`
+2. **`frontend/src/api/videos.ts`** - Extended `getVideos()` with optional `status` and `sort` parameters
+3. **`frontend/src/types/search.ts`** - Updated `SearchResponse` to match backend shape (`count` + `results`) and added `timestamp_formatted` to `SearchResult`
+
+---
+session_id: f3945e33-3195-40ce-9802-1fbf7fea4106
+free_space: 91.1k (45.6%)

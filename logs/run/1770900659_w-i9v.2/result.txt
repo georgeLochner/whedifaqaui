@@ -1,0 +1,5 @@
+Task w-i9v.2 is complete. Created the `GeneratedDocument` model in `backend/app/models/document.py` with all required fields, exported it from `__init__.py`, and generated + applied the Alembic migration. The table and `idx_documents_session` index are live in PostgreSQL.
+
+---
+session_id: 22514806-fa3a-4bbd-bb40-dd7edcb6f1fa
+free_space: 106.6k (53.3%)

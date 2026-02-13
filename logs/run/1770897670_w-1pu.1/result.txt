@@ -1,0 +1,15 @@
+Done. Created 5 implementation tasks for the Conversation Panel & Chat UI feature (w-1pu):
+
+| Task | Title | Scope |
+|------|-------|-------|
+| w-1pu.2 | Create Chat types and API client | `types/chat.ts`, `api/chat.ts` + tests |
+| w-1pu.3 | Create Chat UI components with unit tests | `ChatInput`, `ChatMessage`, `Citation`, `ChatHistory` + tests (S7-F01, F02, F03, F06, F07) |
+| w-1pu.4 | Create useChat hook and ConversationPanel with unit tests | `useChat` hook, `ConversationPanel` + tests (S7-F04, F05) |
+| w-1pu.5 | Create WorkspacePage with routing and navigation | `WorkspacePage`, route in `App.tsx`, nav link + tests |
+| w-1pu.6 | E2E verify Conversation Panel & Chat UI | E2E-P2-01, E2E-P2-04, E2E-P2-06, E2E-P2-07 |
+
+Dependencies chain: w-1pu.1 → .2 → .3 → .4 → .5 → .6. The first implementation task (w-1pu.2) is now unblocked and ready.
+
+---
+session_id: 59088121-944b-42d8-9d72-a08a3e111446
+free_space: 102.5k (51.3%)

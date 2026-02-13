@@ -1,0 +1,14 @@
+Task **w-csa.5** is complete. Here's what was done:
+
+**Created files:**
+- `backend/app/tasks/chunking.py` — `chunk_segments` Celery task that loads transcript segments from DB, runs `semantic_chunk()`, replaces initial segments with final chunks, then chains to `index_segments`
+- `backend/app/tasks/indexing.py` — `index_segments` Celery task that generates embeddings via `generate_embeddings()`, creates the OpenSearch `segments_index` with KNN mapping (768-dim, cosinesimil, HNSW), bulk indexes all segments, marks them as indexed, and sets video status to READY
+
+**Modified files:**
+- `backend/app/tasks/celery_app.py` — Replaced `autodiscover_tasks` with explicit `include` list for all 5 task modules, ensuring reliable task registration
+
+**Pipeline chain:** `process_video` → `transcribe_video` → `chunk_segments` → `index_segments`, with each task chaining to the next and error handling setting status to ERROR throughout.
+
+---
+session_id: dbf191fb-aa9d-4fd3-b750-cf26fe5fcff1
+free_space: 116.5k (58.2%)

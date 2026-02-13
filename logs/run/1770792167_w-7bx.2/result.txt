@@ -1,0 +1,17 @@
+Task w-7bx.2 is complete. Here's what was delivered:
+
+**Files created:**
+- `backend/app/schemas/transcript.py` — `SegmentResponse` and `TranscriptResponse` Pydantic schemas with computed `timestamp_formatted` field (seconds → MM:SS)
+- `backend/app/api/routes/playback.py` — Two endpoints:
+  - `GET /videos/{id}/stream` — Serves MP4 video with Range request support (HTTP 206 for seek)
+  - `GET /videos/{id}/transcript` — Returns transcript segments ordered by start_time with speaker labels
+- `backend/tests/integration/test_playback_api.py` — 14 integration tests covering P1-I01, P1-I02, P1-I03, P3-I01, P3-I02
+
+**Files modified:**
+- `backend/app/main.py` — Mounted playback router
+
+**All 133 tests pass** (14 new + 119 existing, zero regressions).
+
+---
+session_id: 8af50e97-3949-4bb4-9d94-c3f51156c9cc
+free_space: 53k (26.5%)

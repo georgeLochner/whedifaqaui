@@ -1,0 +1,37 @@
+## E2E Verification Report
+
+### Automated Tests
+- Backend unit tests: **27 passed**, 0 failed
+- Backend integration tests: **11 passed**, 0 failed
+- Frontend tests: **16 passed**, 0 failed
+
+### Bug Found & Fixed
+- **VITE_API_URL** in `docker-compose.yml` was `http://localhost:8000` (missing `/api` prefix), causing browser uploads to POST to `http://localhost:8000/videos` instead of `http://localhost:8000/api/videos` (404). Fixed to `http://localhost:8000/api`.
+
+### E2E Scenarios
+- **E2E-01 (steps 1-5): Upload flow - PASS**
+  - Step 1: Navigate to upload page - PASS (all form fields visible)
+  - Step 2: Fill form with title, date, participants, notes, MKV file - PASS
+  - Step 3: Submit form - PASS (upload completes successfully after fix)
+  - Step 4: Observe status badge - PASS (shows "uploaded")
+  - Step 5: Status endpoint returns current status - PASS (`{"status": "uploaded"}`)
+- **E2E-05: Error handling - PASS (upload-side)**
+  - Non-MKV files rejected with 400: PASS
+  - File input restricted to .mkv (client-side): PASS
+  - Corrupted .mkv accepted for upload (error detection is processing pipeline scope): PASS
+
+### Parent Feature Cross-Check
+- Test IDs: **19/19 covered**
+- E2E scenarios: **2/2 executed** (within feature scope)
+- Quality Gate: **ALL satisfied**
+
+### Regressions
+- Full backend test suite: **42 passed**, 0 failed - PASS
+- Full frontend test suite: **16 passed**, 0 failed - PASS
+- Health endpoint: **PASS** (all services connected)
+
+### Result: PASS
+
+---
+session_id: 2f97373b-1381-4f98-a704-54bc970a6304
+free_space: 113.8k (56.9%)

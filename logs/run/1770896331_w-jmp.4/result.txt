@@ -1,0 +1,11 @@
+Task w-jmp.4 complete.
+
+**Summary:**
+- Created `backend/tests/unit/test_recording_date.py` — 3 unit tests (V4-U01, V4-U02, V4-U03) for recording_date schema validation, ISO format parsing, and model storage
+- Created `backend/tests/integration/test_recording_date.py` — 1 integration test (V4-I03) verifying the `idx_videos_recording_date` PostgreSQL index exists
+- Added V4-F01 test to `frontend/src/__tests__/components/UploadForm.test.tsx` — verifies upload form shows validation error when recording date is empty
+- All tests pass: 4 backend (new), 10 frontend (2 new + 8 existing), 156 total backend with no regressions
+
+---
+session_id: 409e468d-3afc-45e1-af55-376d163747db
+free_space: 63.7k (31.8%)

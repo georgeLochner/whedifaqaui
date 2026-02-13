@@ -1,0 +1,13 @@
+Task w-i9v.7 is complete. Here's a summary of what was done:
+
+**Files modified:**
+- `frontend/src/hooks/useWorkspace.ts` — Added `addDocumentResult` callback that creates document-type `ResultItem` entries with deduplication by ID
+- `frontend/src/components/workspace/ContentPane.tsx` — Replaced static document placeholder with full integration: fetches `DocumentDetail` via `getDocument()` API, renders `DocumentViewer` component with markdown-to-HTML rendering, wires download button to `downloadDocument()` API with browser file save, added loading state
+- `frontend/src/__tests__/hooks/useWorkspace.test.ts` — Added 3 tests for `addDocumentResult` (S10-F05): basic add, deduplication, coexistence with video results
+- `frontend/src/__tests__/components/workspace/ContentPane.test.tsx` — Updated document tests to work with async fetch pattern, added tests for: fetching document detail, markdown rendering, loading state, download button triggering API call
+
+**Test results:** 169 tests passing across 28 test files, zero regressions.
+
+---
+session_id: 6bb5368b-8e47-44e2-9847-677346a3afbc
+free_space: 92.7k (46.4%)

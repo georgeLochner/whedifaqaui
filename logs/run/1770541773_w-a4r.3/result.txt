@@ -1,0 +1,9 @@
+The beads file was already committed with the previous commit (auto-synced by hooks). Task w-a4r.3 is complete.
+
+Created:
+- **`backend/app/services/video.py`** - `create_video` (file upload + DB record), `get_video`, `list_videos` (paginated, ordered by created_at desc), `update_status` (with VALID_TRANSITIONS enforcement)
+- **`backend/app/services/__init__.py`** - Exports all four functions
+
+---
+session_id: 8470b467-bf6e-444a-bb0c-08d2728ea386
+free_space: 73.4k (36.7%)

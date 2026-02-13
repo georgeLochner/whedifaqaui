@@ -1,0 +1,10 @@
+Task w-csa.3 is complete. Created two files:
+
+- **`backend/app/services/transcription.py`** - WhisperX integration with `load_whisperx_model` (cached), `transcribe_audio` (full transcribe→align→diarize workflow), `parse_whisperx_output` (normalized segments with speaker label defaults), `calculate_word_count`
+- **`backend/app/tasks/transcription.py`** - `transcribe_video` Celery task that runs WhisperX, creates Transcript + Segment DB records, saves JSON to `/data/transcripts/`, cleans up audio WAV, and chains to chunking task
+
+All 42 existing tests pass with no regressions.
+
+---
+session_id: 337c7d14-76d5-41b1-9457-0b993b11791f
+free_space: 80.7k (40.3%)

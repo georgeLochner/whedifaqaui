@@ -1,0 +1,22 @@
+Task w-6nz.8 is complete. Here's what was done:
+
+**Already existed** (from previous agents):
+- `package.json`, `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`, `tsconfig.json`, `tsconfig.node.json`, `index.html`
+- `src/main.tsx`, `src/App.tsx`, `src/index.css`
+- Page components: `HomePage`, `SearchPage`, `UploadPage`, `VideoPage`
+- `src/services/api.ts`, `src/types/index.ts`
+
+**Created/modified in this session:**
+- `frontend/Dockerfile` - Multi-stage build (node:20-alpine + nginx:alpine)
+- `frontend/nginx.conf` - SPA fallback, API proxy to backend
+- `frontend/src/api/client.ts` - Axios instance with configurable baseURL
+- `frontend/src/types/video.ts` - Video, Transcript, Segment interfaces
+- `frontend/src/types/search.ts` - SearchRequest, SearchResult, SearchResponse interfaces
+- `frontend/src/vite-env.d.ts` - Vite type reference
+- `frontend/package.json` - Added axios ^1.6.7, bumped react-router-dom to ^6.22.0
+- `frontend/src/App.tsx` - Fixed route path `/video/:id` → `/videos/:id`
+
+**Verified:**
+- Docker image builds successfully
+- Frontend serves HTML with `root` div at localhost:3000
+- All acceptance criteria met

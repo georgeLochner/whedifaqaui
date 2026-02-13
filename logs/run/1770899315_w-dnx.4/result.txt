@@ -1,0 +1,10 @@
+Task w-dnx.4 is complete. Created:
+
+- **`frontend/src/components/workspace/ContentPane.tsx`** — Right panel with three modes: empty state placeholder, video mode (reusing Phase 1 VideoPlayer + TranscriptPanel with seek-to-timestamp and transcript sync), and document mode (title + download button placeholder)
+- **`frontend/src/__tests__/components/workspace/ContentPane.test.tsx`** — 9 unit tests covering S9-F01 through S9-F07
+
+All 9 tests pass. This unblocks w-dnx.5 (Wire WorkspacePage).
+
+---
+session_id: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+free_space: 71.7k (35.9%)

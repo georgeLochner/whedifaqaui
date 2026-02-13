@@ -1,0 +1,7 @@
+Already on main, sync is clean. The beads were committed with the code change.
+
+Task **w-02w.2** remains **open** because R1-11 fails due to the HF_TOKEN configuration issue (tracked as **w-96w**). The task has a dependency added to w-96w and cannot be closed until that bug is resolved and multi-speaker diarization is re-verified.
+
+---
+session_id: be4604a5-660a-4796-828f-5b70f56362ed
+free_space: 72.9k (36.4%)

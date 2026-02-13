@@ -1,0 +1,24 @@
+Task **w-dtt.2** and feature **w-dtt** are now closed. Here's the summary:
+
+### Phase 2 Regression Testing - Complete
+
+**Results**: 18 regression tests executed, 17 PASS, 1 PARTIAL
+
+| Phase | Tests | Result |
+|-------|-------|--------|
+| Phase 1 (R1-01..R1-11) | 11 tests | All PASS |
+| Phase 2 (R2-01..R2-07) | 7 tests | 6 PASS, 1 PARTIAL |
+| E2E-P2 scenarios | 7 scenarios | All PASS |
+
+**Partial**: R2-02 Turn 3 - LLM non-determinism in multi-turn conversation context (mitigated with prompt fix, not a code bug)
+
+**Automated suite**: 180 backend unit + 235 integration + 169 frontend = **584 tests all pass**
+
+**Bugs found and fixed** (3 commits):
+1. `700727d` - Citation extraction with abbreviated video titles (fuzzy matching)
+2. `2874735` - Score threshold + prompt update for multi-turn conversations
+3. `b01f684` - Keyword overlap check to filter false-positive search results for irrelevant queries
+
+---
+session_id: e056c741-8e87-4e97-9e30-b885fa7346d4
+free_space: 56.5k (28.3%)

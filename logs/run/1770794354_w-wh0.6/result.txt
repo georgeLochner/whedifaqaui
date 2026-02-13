@@ -1,0 +1,11 @@
+Task w-wh0.6 complete. Summary:
+
+- **All 200 tests pass** (133 backend + 67 frontend), zero regressions
+- **All 10 required test IDs** verified present and passing
+- **All 3 E2E scenarios** verified through browser (search flow, library filtering, no-results)
+- **1 bug fixed**: `VideoCard` crashed when `video.participants` was `null` from the API — added null guard and updated the `Video` TypeScript type to `string[] | null`
+- **Parent feature w-wh0** also closed as all quality gates are satisfied
+
+---
+session_id: d5f26410-462c-40bc-ba8a-839a1102864f
+free_space: 108k (54.0%)

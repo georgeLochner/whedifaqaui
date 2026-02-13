@@ -1,0 +1,10 @@
+Task w-dnx.3 is complete. Created:
+
+- **`frontend/src/components/workspace/ResultsPanel.tsx`** — Scrollable panel displaying accumulated video citations and documents with selected state highlighting, recording date, formatted timestamps, and click handlers
+- **`frontend/src/__tests__/components/workspace/ResultsPanel.test.tsx`** — 11 unit tests covering S8-F01, S8-F02, S8-F03, S8-F04, S8-F05, S8-F08, and V4-F02
+
+All 11 tests pass. This unblocks w-dnx.5 (Wire WorkspacePage).
+
+---
+session_id: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+free_space: 85.7k (42.9%)

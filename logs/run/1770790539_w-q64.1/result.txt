@@ -1,0 +1,12 @@
+Task w-q64.1 is complete. I created 4 tasks for the Search & Indexing feature:
+
+1. **w-q64.2**: Add index management to OpenSearch client — consolidates index mapping/creation from `indexing.py` into `opensearch.py`
+2. **w-q64.3**: Create search schemas and service — Pydantic schemas + hybrid query builder with BM25/kNN and RRF ranking
+3. **w-q64.4**: Create search API endpoint — GET /api/search?q=... route + mount in FastAPI app
+4. **w-q64.5**: E2E verification — runs all S1/S3 tests and verifies E2E scenarios
+
+Dependencies chain: w-q64.2 → w-q64.3 → w-q64.4 → w-q64.5 (sequential).
+
+---
+session_id: b8b14519-3294-46d6-a8cc-344424a771d3
+free_space: 117.4k (58.7%)

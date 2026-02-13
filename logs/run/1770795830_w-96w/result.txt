@@ -1,0 +1,16 @@
+Done. Here's what was fixed:
+
+**w-96w: Speaker diarization fails: HF_TOKEN not configured**
+
+Added `HF_TOKEN` configuration plumbing to three files:
+- **`.env`** — empty placeholder for the actual token value
+- **`.env.example`** — with comments linking to HuggingFace token creation and pyannote license pages
+- **`docker-compose.yml`** — passed to both `backend` (line 74) and `worker` (line 104) via `${HF_TOKEN:-}`
+
+The code in `transcription.py` already correctly reads `HF_TOKEN` from the environment and conditionally runs the pyannote diarization pipeline. The missing piece was the configuration wiring.
+
+**Note:** The R1-11 regression test (multi-speaker diarization) will only pass once a valid HuggingFace token is added to `.env` — this requires a HuggingFace account with accepted pyannote/speaker-diarization-3.1 license.
+
+---
+session_id: e217c963-d9ff-4eb9-b277-b7f784dad80a
+free_space: 131.8k (65.9%)

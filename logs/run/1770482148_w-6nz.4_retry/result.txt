@@ -1,0 +1,16 @@
+Task **w-6nz.4** is complete. Here's what was done:
+
+**Files modified:**
+- `backend/app/core/config.py` — Updated to pydantic-settings v2 with `model_config` dict, uppercase field names (`DATABASE_URL`, `OPENSEARCH_URL`, `REDIS_URL`, `CELERY_BROKER_URL`, `VIDEO_STORAGE_PATH`, `TRANSCRIPT_STORAGE_PATH`)
+- `backend/app/core/database.py` — Updated to SQLAlchemy 2.0 `DeclarativeBase`, added `expire_on_commit=False`, uses `settings.DATABASE_URL`
+- `backend/app/core/opensearch.py` — Updated to use `settings.OPENSEARCH_URL`
+- `backend/alembic/env.py`, `backend/app/api/routes/health.py`, `backend/app/main.py`, `backend/app/tasks/celery_app.py` — Updated references to match new uppercase field names
+
+**Verification passed:**
+- `settings.DATABASE_URL` prints the correct PostgreSQL URL
+- Database engine/session/Base/get_db all work
+- OpenSearch client connects to version 2.11.1
+
+---
+session_id: 333163b5-2656-4961-92d0-339aa176e514
+free_space: 104.5k (52.2%)

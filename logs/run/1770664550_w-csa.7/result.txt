@@ -1,0 +1,21 @@
+Task **w-csa.7** is complete.
+
+**Created:** `backend/tests/integration/test_processing_pipeline.py` with 9 integration tests:
+
+| Test ID | Test | Status |
+|---------|------|--------|
+| V2-I01 | Transcription creates transcript record in DB | Pass |
+| V2-I02 | Transcription creates correct number of segments | Pass |
+| V2-I03 | Audio extraction calls FFmpeg with correct WAV args | Pass |
+| V2-I04 | End-to-end transcription flow (transcript + segments) | Pass |
+| V2-I05 | Thumbnail path set on video during processing | Pass |
+| V3-I01 | Full status chain: uploaded → processing → transcribing → chunking → indexing → ready | Pass |
+| C1-I01 | Chunking replaces segments with chunked versions | Pass |
+| C1-I02 | Index task calls OpenSearch bulk with correct document count | Pass |
+| C1-I03 | Embeddings generated as 768-dim vectors for all segments | Pass |
+
+All 78 tests pass across the full suite with zero regressions.
+
+---
+session_id: dbf191fb-aa9d-4fd3-b750-cf26fe5fcff1
+free_space: 68.3k (34.2%)

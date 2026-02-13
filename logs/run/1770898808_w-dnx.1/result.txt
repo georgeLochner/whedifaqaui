@@ -1,0 +1,13 @@
+Task w-dnx.1 is complete. I created 5 implementation tasks for the Results Panel & Content Pane feature:
+
+1. **w-dnx.2**: Create `useWorkspace` hook — state management for results, selection, deduplication
+2. **w-dnx.3**: Create `ResultsPanel` component — scrollable, clickable results list with selected highlighting (S8-F*, V4-F02)
+3. **w-dnx.4**: Create `ContentPane` component — video player + transcript sync or document viewer (S9-F*)
+4. **w-dnx.5**: Wire `WorkspacePage` — connect chat→results→content flow with integration tests (S8-I*, S9-I*)
+5. **w-dnx.6**: E2E verification — verify full flow with Playwright MCP (E2E-P2-01, E2E-P2-02, E2E-P2-05)
+
+Tasks 3 and 4 can run in parallel after task 2 completes. Task 5 requires both 3 and 4. Task 6 (E2E) is the final gate.
+
+---
+session_id: 15dca7aa-d5fc-41bb-a5d5-7aebc41eccb0
+free_space: 102.3k (51.1%)

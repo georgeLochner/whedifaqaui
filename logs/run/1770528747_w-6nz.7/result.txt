@@ -1,0 +1,22 @@
+Task w-6nz.7 is complete. Here's what was done:
+
+**Already existed** (from previous agents):
+- `main.py` - FastAPI app with CORS, health endpoint, router mounting
+- `celery_app.py` - Celery config with Redis broker
+- `tasks/ping.py` - Health check task
+- `api/routes/health.py` - Health endpoint checking postgres, opensearch, redis
+- All `__init__.py` package files
+
+**Created in this session:**
+- `backend/app/api/deps.py` - Re-exports `get_db` for API dependency injection
+- `backend/app/schemas/video.py` - `VideoStatus` enum with all 7 values (uploaded, processing, transcribing, chunking, indexing, ready, error)
+- `backend/tests/unit/test_video.py` - V3-U01 test verifying enum completeness
+
+**Verified:**
+- Health endpoint returns `{"status": "ok"}` with all services connected
+- All 4 tests pass (3 new + 1 existing)
+- No regressions
+
+---
+session_id: 8918e573-cee4-4cee-8799-cd947fb348a2
+free_space: 131.3k (65.6%)

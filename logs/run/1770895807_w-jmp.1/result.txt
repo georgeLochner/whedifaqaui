@@ -1,0 +1,12 @@
+Task w-jmp.1 is complete. Created 4 implementation tasks for the Claude Wrapper Module & Recording Date feature:
+
+1. **w-jmp.2** — Create Claude wrapper module (`services/claude.py`) with ClaudeService class + 7 unit tests (S7-U01 through S7-U07)
+2. **w-jmp.3** — Create output parser (`services/output_parser.py`) and prompt templates (`services/prompt.py`) + unit tests
+3. **w-jmp.4** — Add V4 recording date test coverage (V4-U01-U03, V4-I03, V4-F01) — the model/migration/form already exist from Phase 1
+4. **w-jmp.5** — E2E verification (runs all tests, smoke tests imports)
+
+Dependencies chain: w-jmp.2 → w-jmp.3 → w-jmp.4 → w-jmp.5
+
+---
+session_id: 409e468d-3afc-45e1-af55-376d163747db
+free_space: 106.2k (53.1%)

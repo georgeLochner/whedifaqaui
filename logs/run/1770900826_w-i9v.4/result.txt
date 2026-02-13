@@ -1,0 +1,5 @@
+Task w-i9v.4 is complete. Created `backend/app/services/document.py` with `generate_document`, `get_document`, `prepare_document_context`, `extract_title`, and `build_document_prompt`. All 21 unit tests pass covering Claude invocation, title extraction, context file creation/cleanup, database persistence, and error handling.
+
+---
+session_id: 22514806-fa3a-4bbd-bb40-dd7edcb6f1fa
+free_space: 80.1k (40.1%)

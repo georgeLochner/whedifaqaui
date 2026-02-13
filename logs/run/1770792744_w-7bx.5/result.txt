@@ -1,0 +1,22 @@
+Task w-7bx.5 is complete. Here's what was delivered:
+
+**Modified:**
+- `frontend/src/pages/VideoPage.tsx` — Replaced placeholder with full video playback page:
+  - Fetches video metadata and transcript via `getVideo`/`getTranscript` on mount
+  - Side-by-side layout (lg:grid-cols-3): player (2 cols) + transcript (1 col)
+  - Video title, recording date, duration, participants metadata display
+  - `useTranscriptSync` hook syncs transcript highlighting with playback
+  - Clicking transcript segment seeks player and updates URL `?t=` param
+  - `?t=` URL parameter auto-seeks player on page load
+
+**Created:**
+- `frontend/src/__tests__/pages/VideoPage.test.tsx` — 6 tests covering:
+  - Loading state, content rendering, error state
+  - P2-F03: URL updates with `?t=` when segment clicked
+  - P2-F04: `?t=` in URL passes `initialTime` to VideoPlayer
+
+**Verification:** All 38 frontend tests pass (6 new + 32 existing), zero regressions.
+
+---
+session_id: 25e3b3a9-2331-44c4-a091-749d628c95e6
+free_space: 98.6k (49.3%)

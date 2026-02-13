@@ -1,0 +1,17 @@
+Task w-i9v.6 is complete. Here's what was delivered:
+
+**Files created:**
+- `frontend/src/types/document.ts` — TypeScript interfaces: `DocumentRequest`, `DocumentResponse`, `DocumentDetail`
+- `frontend/src/api/documents.ts` — API client with `createDocument()`, `getDocument()`, `downloadDocument()` functions using the existing axios client pattern
+- `frontend/src/components/documents/DocumentCard.tsx` — Card component with document icon, title, preview (truncated at 100 chars), click handler, and `data-testid="result-item-document"`
+- `frontend/src/components/documents/DocumentViewer.tsx` — Viewer component that converts markdown to HTML, shows title/content/download button, with `data-testid="document-viewer"` and `data-testid="document-download"`
+
+**Tests (12 passing):**
+- `DocumentCard.test.tsx` — S10-F01 (card renders with title), S10-F02 (preview truncation)
+- `DocumentViewer.test.tsx` — S10-F03 (markdown rendered as HTML), S10-F04 (download button triggers callback)
+
+All 162 existing tests continue to pass with no regressions.
+
+---
+session_id: 6bb5368b-8e47-44e2-9847-677346a3afbc
+free_space: 122.4k (61.2%)

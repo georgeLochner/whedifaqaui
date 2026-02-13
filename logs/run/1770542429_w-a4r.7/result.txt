@@ -1,0 +1,16 @@
+Task w-a4r.7 is complete. Summary:
+
+**Files created:**
+- `frontend/src/test-setup.ts` — vitest setup with jest-dom matchers and auto-cleanup
+- `frontend/src/__tests__/components/UploadForm.test.tsx` — 8 tests (V1-F01 to V1-F04): form rendering, validation errors, .mkv file restriction, progress bar display
+- `frontend/src/__tests__/components/StatusBadge.test.tsx` — 7 tests (V3-F01 to V3-F03): color-coded badges per status, polling via `getVideoStatus` at 5s interval, ready state styling
+
+**Files modified:**
+- `frontend/package.json` — Added `@testing-library/react`, `@testing-library/jest-dom`, `jsdom` devDependencies
+- `frontend/vite.config.ts` — Changed test environment to `jsdom`, added `setupFiles`
+
+**Results:** All 16 frontend tests pass, build clean.
+
+---
+session_id: 8b51acb3-c4bb-46ba-9530-c538bcce3e53
+free_space: 49.3k (24.7%)

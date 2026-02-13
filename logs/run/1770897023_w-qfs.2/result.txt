@@ -1,0 +1,8 @@
+Task w-qfs.2 is complete. Created:
+- `backend/app/schemas/chat.py` — `Citation`, `ChatRequest`, `ChatResponse` schemas with validation (non-empty message, timestamp >= 0)
+- `backend/app/schemas/__init__.py` — Exported new schemas
+- `backend/tests/unit/test_chat_schema.py` — 12 unit tests, all passing
+
+---
+session_id: 758c0461-bf2c-4408-85ac-88ba33b23940
+free_space: 69.4k (34.7%)

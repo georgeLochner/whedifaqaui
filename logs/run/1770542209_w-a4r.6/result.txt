@@ -1,0 +1,16 @@
+Task w-a4r.6 is complete. Here's a summary:
+
+**Files created:**
+- `frontend/src/api/videos.ts` — API client with `uploadVideo` (multipart/form-data + progress callback), `getVideos`, `getVideo`, `getVideoStatus`
+- `frontend/src/components/upload/UploadForm.tsx` — Form with file input (.mkv only), title, date, participants, notes, client-side validation, all `data-testid` attributes
+- `frontend/src/components/upload/UploadProgress.tsx` — Progress bar shown during upload
+- `frontend/src/components/common/StatusBadge.tsx` — Color-coded badge (gray/yellow/blue/green/red per status)
+
+**Files modified:**
+- `frontend/src/pages/UploadPage.tsx` — Replaced placeholder with working page that wires form + progress + status polling (every 5s, stops at ready/error)
+
+**Verification:** TypeScript build succeeds, page renders correctly at localhost:3000/upload with all fields visible.
+
+---
+session_id: 8b51acb3-c4bb-46ba-9530-c538bcce3e53
+free_space: 74.3k (37.2%)

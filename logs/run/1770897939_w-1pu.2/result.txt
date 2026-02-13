@@ -1,0 +1,8 @@
+Task w-1pu.2 complete. Created:
+- `frontend/src/types/chat.ts` — Citation, ChatMessage, ChatRequest, ChatResponse types matching the backend schema
+- `frontend/src/api/chat.ts` — `sendChatMessage()` function calling POST /api/chat
+- `frontend/src/__tests__/api/chat.test.ts` — 4 tests all passing (POST payload, conversation_id handling, response shape)
+
+---
+session_id: 59088121-944b-42d8-9d72-a08a3e111446
+free_space: 95.9k (47.9%)

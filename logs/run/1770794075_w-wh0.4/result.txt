@@ -1,0 +1,11 @@
+Task w-wh0.4 is complete. Changes made:
+
+- **`frontend/src/pages/LibraryPage.tsx`** (new) - Fetches videos via `getVideos()`, renders `VideoList`, shows loading spinner, empty state with upload link, and error state
+- **`frontend/src/App.tsx`** - Replaced inline nav with `Layout` wrapper, swapped `HomePage` for `LibraryPage` at `/`, added `/library` alias route
+- **`frontend/src/__tests__/pages/LibraryPage.test.tsx`** (new) - M1-F01: 4 tests covering loading, video list display, empty state, and error state
+
+All 4 tests pass.
+
+---
+session_id: f3945e33-3195-40ce-9802-1fbf7fea4106
+free_space: 70.1k (35.1%)

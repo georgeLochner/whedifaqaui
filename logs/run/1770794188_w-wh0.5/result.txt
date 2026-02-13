@@ -1,0 +1,10 @@
+Task w-wh0.5 is complete. Changes made:
+
+- **`frontend/src/components/search/SearchBar.tsx`** (new) - Controlled input + submit button, Enter key submits, disabled when empty
+- **`frontend/src/components/search/SearchResults.tsx`** (new) - Renders results with video title, text snippet, speaker label, and timestamp links to `/videos/{id}?t={start_time}`; shows no-results message when empty
+- **`frontend/src/pages/SearchPage.tsx`** - Replaced placeholder with functional search page: SearchBar, loading spinner, SearchResults, error handling
+- **3 test files** - S1-F01 (3 tests), S1-F02 (3 tests), S1-F03 (3 tests), S3-F01 (5 tests), S3-F02 (1 test) - all 15 tests pass
+
+---
+session_id: f3945e33-3195-40ce-9802-1fbf7fea4106
+free_space: 58.6k (29.3%)

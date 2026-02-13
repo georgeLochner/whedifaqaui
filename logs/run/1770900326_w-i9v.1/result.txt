@@ -1,0 +1,17 @@
+Task w-i9v.1 is complete. I created 7 implementation tasks for the Document Generation feature:
+
+| Task | Title | Scope |
+|------|-------|-------|
+| w-i9v.2 | Create GeneratedDocument database model | Model + migration |
+| w-i9v.3 | Create Document Pydantic schemas with unit tests | Schemas + S10-U01-U04 |
+| w-i9v.4 | Implement Document service with unit tests | Service + unit tests |
+| w-i9v.5 | Create Document API endpoints with integration tests | Routes + S10-I01-I06 |
+| w-i9v.6 | Create frontend document types, API client, and components with tests | Types + API + components + S10-F01-F04 |
+| w-i9v.7 | Wire document components into workspace with tests | Integration + S10-F05 |
+| w-i9v.8 | E2E verification for Document Generation | E2E-P2-03 + all S10 tests |
+
+Dependencies chain: w-i9v.1 → .2 → .3 → .4 → .5 → .6 → .7 → .8. The first implementation task (w-i9v.2) is now unblocked and ready.
+
+---
+session_id: 22514806-fa3a-4bbd-bb40-dd7edcb6f1fa
+free_space: 111.8k (55.9%)

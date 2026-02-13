@@ -1,0 +1,16 @@
+Task complete. Here's what was done:
+
+**w-6nz.5: Create SQLAlchemy models (Video, Transcript, Segment)**
+
+Created 3 model files + updated `__init__.py`:
+
+- **`backend/app/models/video.py`** — Video model with 13 columns (UUID PK, title, file_path, status with server default, participants ARRAY, recording_date, timestamps) and 2 indexes (`idx_videos_status`, `idx_videos_recording_date`)
+- **`backend/app/models/transcript.py`** — Transcript model with 6 columns, FK to `videos.id` with CASCADE delete, UniqueConstraint on `video_id`
+- **`backend/app/models/segment.py`** — Segment model with 10 columns, FKs to both `transcripts.id` and `videos.id` with CASCADE, and 3 indexes including composite `idx_segments_time`
+- **`backend/app/models/__init__.py`** — Exports all three models
+
+Verification passed: `from app.models import Video, Transcript, Segment` succeeds in the container.
+
+---
+session_id: 55681063-a0d9-4bce-8c43-d5ed4d103b74
+free_space: 122.8k (61.4%)

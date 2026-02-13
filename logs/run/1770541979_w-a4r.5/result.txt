@@ -1,0 +1,12 @@
+Task w-a4r.5 is complete. Here's a summary:
+
+**Files created/modified:**
+- `backend/tests/conftest.py` — Test fixtures: transactional DB session (rolls back after each test), FastAPI TestClient with dependency override, `sample_mkv_file`, `tmp_video_dir` (overrides VIDEO_STORAGE_PATH), `make_video` factory
+- `backend/tests/unit/test_video_schema.py` — 27 unit tests covering V1-U01 through V1-U04, V3-U01, V3-U02
+- `backend/tests/integration/test_video_api.py` — 11 integration tests covering V1-I01 through V1-I04, V3-I02, V3-I03
+
+**All 42 tests pass** (27 unit + 11 integration + 3 pre-existing + 1 placeholder), zero regressions.
+
+---
+session_id: 8b51acb3-c4bb-46ba-9530-c538bcce3e53
+free_space: 92.3k (46.2%)

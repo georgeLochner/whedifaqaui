@@ -1,0 +1,5 @@
+Task w-i9v.8 is complete. All tests pass (246 backend, 169 frontend), the E2E-P2-03 browser scenario verified successfully, and the code is committed. The key fix was wiring document generation into the workspace chat flow — ConversationPanel now detects summarization requests and triggers `POST /api/documents`, with the result appearing in the results panel as a clickable document item.
+
+---
+session_id: 2e8cdf04-7b39-4f5f-a156-ee19816f3fdc
+free_space: 93.6k (46.8%)

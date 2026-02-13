@@ -1,0 +1,12 @@
+Task w-dnx.6 is complete. Summary of what was done:
+
+1. **Ran all 42 specified tests** — all passed
+2. **Verified all 21 test IDs** are covered by actual test implementations
+3. **Found and fixed a bug**: `useWorkspace` and `useChat` hooks used plain `useState` so results and conversation history were lost on navigation. Added `sessionStorage` persistence to both hooks.
+4. **Executed all 3 E2E scenarios** (E2E-P2-01, E2E-P2-02, E2E-P2-05) through the browser — all passed after the fix
+5. **Ran full regression suite**: 150 frontend tests + 205 backend tests — all passing
+6. **Closed both w-dnx.6 (task) and w-dnx (feature)**
+
+---
+session_id: be100a98-1d7e-4072-b244-4cea127b9644
+free_space: 57.6k (28.8%)

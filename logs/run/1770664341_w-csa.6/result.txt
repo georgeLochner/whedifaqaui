@@ -1,0 +1,13 @@
+Task **w-csa.6** is complete. Summary:
+
+**Created 3 test files with 27 tests total, all passing:**
+
+- `test_transcription.py` (12 tests) — V2-U01 to V2-U04 (WhisperX parsing, timestamp extraction, speaker labels, word count), P1-U01 (FFmpeg remux with mock), P1-U02 (processed_path stored on video record)
+- `test_chunking.py` (7 tests) — C1-U01 to C1-U04 (chunk size limits, speaker preservation, timestamp validity, semantic boundary detection) plus helper function tests
+- `test_embedding.py` (8 tests) — embedding dimension/batch checks, cosine similarity for identical/orthogonal/opposite/different/zero vectors
+
+Zero regressions across all 57 unit tests.
+
+---
+session_id: dbf191fb-aa9d-4fd3-b750-cf26fe5fcff1
+free_space: 91.4k (45.7%)

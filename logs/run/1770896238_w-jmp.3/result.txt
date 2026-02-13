@@ -1,0 +1,10 @@
+Task w-jmp.3 complete.
+
+**Summary:**
+- Created `backend/app/services/output_parser.py` — `parse_pipe_delimited()` function handling 5 record types (ENTITY, REL, SPEAKER, FRAME, TOPIC) with comment/empty line skipping
+- Created `backend/app/services/prompt.py` — `QUICK_MODE_PROMPT` and `DOCUMENT_PROMPT` template constants
+- Created 13 unit tests (9 parser + 4 prompt), all passing, 103 total unit tests with no regressions
+
+---
+session_id: 409e468d-3afc-45e1-af55-376d163747db
+free_space: 82.7k (41.4%)

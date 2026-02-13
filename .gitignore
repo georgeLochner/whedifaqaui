@@ -29,8 +29,7 @@ data/**
 data/test/videos/*.mkv
 
 # Logs
-*.log
-logs/
+
 
 # OS
 .DS_Store

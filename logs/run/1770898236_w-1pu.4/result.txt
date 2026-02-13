@@ -1,0 +1,9 @@
+Task w-1pu.4 complete. Created:
+
+- **`frontend/src/hooks/useChat.ts`** — Chat state hook managing `messages[]`, `conversationId`, `isLoading`, `error`, and `sendMessage()`. Stores conversation ID from first response and passes it on subsequent calls.
+- **`frontend/src/components/workspace/ConversationPanel.tsx`** — Left panel wrapper with ChatHistory + ChatInput, loading indicator, and error display.
+- **13 tests passing** — S7-F04 (loading state), S7-F05 (conversation ID stored), plus hook state management, error handling, and component integration tests.
+
+---
+session_id: 59088121-944b-42d8-9d72-a08a3e111446
+free_space: 68.9k (34.4%)

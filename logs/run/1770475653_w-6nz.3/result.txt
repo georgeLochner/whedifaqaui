@@ -1,0 +1,9 @@
+Task w-6nz.3 is complete. Summary:
+
+**Files created:**
+- `backend/Dockerfile` — Based on `python:3.11-slim`, installs ffmpeg, libsndfile1, curl, creates data directories (`/data/videos/original`, `processed`, `audio`, `thumbnails`, `/data/transcripts`), exposes port 8000
+
+**Files updated:**
+- `backend/requirements.txt` — All Phase 1 pinned versions matching `technology-stack.md`: added `python-multipart==0.0.6`, `ffmpeg-python==0.2.0`, `python-dotenv==1.0.0`, `httpx==0.26.0`; fixed `pydantic` from 2.5.3 to 2.6.1. ML packages (whisperx, torch, sentence-transformers) deferred per task spec.
+
+**Verification:** `docker compose build backend` completed successfully.

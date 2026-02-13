@@ -1,0 +1,5 @@
+Task w-i9v.5 is complete. Created `backend/app/api/routes/documents.py` with three endpoints (POST create, GET retrieve, GET download), registered the router in `main.py`, and wrote 8 passing integration tests covering S10-I01 through S10-I06.
+
+---
+session_id: 22514806-fa3a-4bbd-bb40-dd7edcb6f1fa
+free_space: 64.5k (32.3%)

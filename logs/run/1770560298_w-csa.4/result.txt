@@ -1,0 +1,12 @@
+Task **w-csa.4** is complete. Summary of what was done:
+
+- **Fixed** unused `import math` in `embedding.py` left by previous agent
+- **Verified** both services import and function correctly in Docker:
+  - `embedding.py`: BGE model loads, produces 768-dim vectors, cosine similarity works (self-sim=1.0, zero-vec=0.0)
+  - `chunking.py`: Empty/single/multi-segment chunking all work, speaker attribution and timestamp ordering validated
+- **Installed** `sentence-transformers` and `numpy` in both backend and worker containers
+- **Committed** all changes
+
+---
+session_id: dc743bd6-33a8-4274-928c-34c0bd1e6efa
+free_space: 129.1k (64.6%)
