@@ -168,14 +168,17 @@ def extract_citations(
         if video_id is None:
             continue
         timestamp = _mmss_to_seconds(mmss)
-        # Find matching segment text and resolve full title
+        # Find search result with closest timestamp for this video
         text = ""
         resolved_title = title
+        best_dist = float("inf")
         for sr in search_results:
             if sr.video_id == video_id:
-                text = sr.text
-                resolved_title = sr.video_title
-                break
+                dist = abs(sr.start_time - timestamp)
+                if dist < best_dist:
+                    best_dist = dist
+                    text = sr.text
+                    resolved_title = sr.video_title
         citations.append(
             Citation(
                 video_id=video_id,
