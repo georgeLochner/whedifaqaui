@@ -12,7 +12,7 @@ from app.services.search import search
 
 logger = logging.getLogger(__name__)
 
-TEMP_DIR = Path("/data/temp")
+TEMP_DIR = Path("/app/temp")
 MAX_CONTEXT_CHARS = 32000  # ~8000 tokens, context truncation limit
 
 CITATION_PATTERN = re.compile(r"\[([^\]]+?)\s*@\s*(\d{1,2}:\d{2})\]")

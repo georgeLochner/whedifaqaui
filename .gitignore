@@ -28,6 +28,9 @@ data/**
 !data/test/expected/**
 data/test/videos/*.mkv
 
+# Temp context files (created at runtime by chat service)
+backend/temp/
+
 # Logs
 
 
@@ -42,3 +45,4 @@ htmlcov/
 
 # Docker
 docker-compose.override.yml
+.claude-container/
