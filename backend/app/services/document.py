@@ -21,7 +21,7 @@ from app.services.claude import claude
 
 logger = logging.getLogger(__name__)
 
-TEMP_DIR = Path("/data/temp")
+TEMP_DIR = Path("/app/temp")
 MAX_CONTEXT_CHARS = 64000  # Larger budget for full transcript context
 
 DOCUMENT_PROMPT = """Generate a summary document based on video transcript content.
