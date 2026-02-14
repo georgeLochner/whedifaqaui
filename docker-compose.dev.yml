@@ -8,6 +8,8 @@ services:
       - video_data:/data/videos
       - transcript_data:/data/transcripts
       - model_cache:/root/.cache
+      - /home/ubuntu/.local/share/claude/versions/2.1.42:/usr/local/bin/claude
+      - ./.claude-container:/root/.claude
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   worker:
